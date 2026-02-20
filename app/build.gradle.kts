@@ -67,7 +67,7 @@ configure<ApplicationExtension> {
     }
 
     defaultConfig {
-        applicationId = "dev.patrickgold.florisboard"
+        applicationId = "com.speekez.app"
         minSdk = projectMinSdk.toInt()
         targetSdk = projectTargetSdk.toInt()
         versionCode = projectVersionCode.toInt()
@@ -100,6 +100,15 @@ configure<ApplicationExtension> {
         compose = true
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(findProperty("RELEASE_STORE_FILE") as? String ?: "keystore.jks")
+            storePassword = findProperty("RELEASE_STORE_PASSWORD") as? String ?: ""
+            keyAlias = findProperty("RELEASE_KEY_ALIAS") as? String ?: ""
+            keyPassword = findProperty("RELEASE_KEY_PASSWORD") as? String ?: ""
+        }
+    }
+
     buildTypes {
         named("debug") {
             applicationIdSuffix = ".debug"
@@ -113,6 +122,7 @@ configure<ApplicationExtension> {
             applicationIdSuffix = ".beta"
             versionNameSuffix = projectVersionNameSuffix
 
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             isMinifyEnabled = true
             isShrinkResources = true
@@ -121,6 +131,7 @@ configure<ApplicationExtension> {
         named("release") {
             versionNameSuffix = projectVersionNameSuffix
 
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             isMinifyEnabled = true
             isShrinkResources = true

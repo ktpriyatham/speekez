@@ -1,0 +1,8 @@
+# SpeekEZ Release Signing Configuration
+# Copy this file to signing.properties and fill in your keystore details.
+# NEVER commit signing.properties to version control.
+
+RELEASE_STORE_FILE=path/to/keystore.jks
+RELEASE_STORE_PASSWORD=
+RELEASE_KEY_ALIAS=
+RELEASE_KEY_PASSWORD=

@@ -6,6 +6,11 @@
 # dotenv
 .env
 
+# Signing
+signing.properties
+*.jks
+*.keystore
+
 # Files for the ART/Dalvik VM
 *.dex
 
