@@ -1,6 +1,7 @@
 package com.speekez.app
 
 import android.app.Application
+import com.speekez.data.SpeekEZDatabase
 import com.speekez.voice.VoiceManager
 
 /**
@@ -10,6 +11,7 @@ import com.speekez.voice.VoiceManager
 class SpeekEZApplication : Application(), VoiceManager.Provider {
 
     override val voiceManager by lazy { VoiceManager(this) }
+    val database: SpeekEZDatabase by lazy { SpeekEZDatabase.getDatabase(this) }
 
     override fun onCreate() {
         super.onCreate()

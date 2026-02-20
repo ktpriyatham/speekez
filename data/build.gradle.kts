@@ -11,6 +11,10 @@ android {
     defaultConfig {
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     compileOptions {
@@ -25,6 +29,7 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation(libs.room.runtime)
+    implementation(libs.retrofit.converter.gson)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
