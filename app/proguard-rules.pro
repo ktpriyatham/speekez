@@ -42,3 +42,8 @@
 # Room
 -keep class * extends androidx.room.RoomDatabase
 -keep class com.speekez.data.entity.** { *; }
+-keep class com.speekez.data.dao.** { *; }
+
+# SpeekEZ Voice
+-keep interface com.speekez.voice.VoiceManager$Provider { *; }
+-keep class com.speekez.voice.VoiceManager { *; }
