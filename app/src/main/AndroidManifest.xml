@@ -11,6 +11,13 @@
     <!-- Permission needed for floating widget overlay -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- Permission needed for voice recording -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Permission needed for API calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- Permission needed for foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -214,6 +221,12 @@
             android:exported="false"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true" />
+
+        <!-- SpeekEZ Permission Activity -->
+        <activity
+            android:name="com.speekez.voice.PermissionActivity"
+            android:theme="@style/FlorisAppTheme.Transparent"
+            android:exported="false" />
 
         <!-- Copy to Clipboard Activity -->
         <activity

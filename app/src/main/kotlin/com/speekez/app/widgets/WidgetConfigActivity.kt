@@ -179,7 +179,7 @@ fun WidgetPresetCard(preset: Preset, isSelected: Boolean, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = preset.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                val langSummary = "${preset.inputLanguages.joinToString("+") { it.uppercase() }} \u2192 ${preset.outputLanguage.uppercase()}"
+                val langSummary = "${preset.inputLanguages.joinToString("+") { it.uppercase() }} \u2192 ${preset.outputLanguages.joinToString("+") { it.uppercase() }}"
                 Text(text = langSummary, color = Color(0xFF00D4AA), fontSize = 14.sp)
             }
             if (isSelected) {

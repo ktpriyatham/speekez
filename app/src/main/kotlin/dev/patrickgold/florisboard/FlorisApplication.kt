@@ -139,7 +139,8 @@ class FlorisApplication : Application(), VoiceManager.Provider {
         DictionaryManager.init(this)
 
         scope.launch {
-            FlorisPreferenceStore.get().speekez.floatingWidgetEnabled.collect { enabled ->
+            val prefs by FlorisPreferenceStore
+            prefs.speekez.floatingWidgetEnabled.asFlow().collect { enabled ->
                 val intent = Intent(this@FlorisApplication, FloatingWidgetService::class.java)
                 if (enabled && Settings.canDrawOverlays(this@FlorisApplication)) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

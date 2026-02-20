@@ -215,6 +215,7 @@ private fun SpeekEZSmartbarMainRow(modifier: Modifier = Modifier) {
     val keyboardManager by context.keyboardManager()
     val activeState by keyboardManager.activeState.collectAsState()
     val voiceManager by context.voiceManager()
+    val inputFeedbackController = LocalInputFeedbackController.current
     val scope = rememberCoroutineScope()
 
     val voiceState by voiceManager.state.collectAsState()
