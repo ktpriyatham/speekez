@@ -62,10 +62,17 @@ fun SetupFlow(onSetupComplete: () -> Unit) {
                     2 -> ApiKeyStep(
                         encryptedPrefs = encryptedPrefs,
                         onNext = { currentStep = 3 },
-                        onSkip = { currentStep = 3 }
+                        onSkip = { currentStep = 3 },
+                        onBack = { currentStep = 1 }
                     )
-                    3 -> EnableKeyboardStep(onNext = { currentStep = 4 })
-                    4 -> AllSetStep(onFinish = onSetupComplete)
+                    3 -> EnableKeyboardStep(
+                        onNext = { currentStep = 4 },
+                        onBack = { currentStep = 2 }
+                    )
+                    4 -> AllSetStep(
+                        onFinish = onSetupComplete,
+                        onBack = { currentStep = 3 }
+                    )
                 }
             }
         }
@@ -109,7 +116,8 @@ fun WelcomeStep(onNext: () -> Unit) {
 fun ApiKeyStep(
     encryptedPrefs: EncryptedPreferencesManager,
     onNext: () -> Unit,
-    onSkip: () -> Unit
+    onSkip: () -> Unit,
+    onBack: () -> Unit
 ) {
     var apiKey by remember { mutableStateOf(encryptedPrefs.getOpenRouterKey() ?: "") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -201,6 +209,10 @@ fun ApiKeyStep(
             Text("Skip for now", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
         }
 
+        TextButton(onClick = onBack) {
+            Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+        }
+
         if (showSkipWarning) {
             AlertDialog(
                 onDismissRequest = { showSkipWarning = false },
@@ -225,7 +237,7 @@ fun ApiKeyStep(
 }
 
 @Composable
-fun EnableKeyboardStep(onNext: () -> Unit) {
+fun EnableKeyboardStep(onNext: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -256,11 +268,14 @@ fun EnableKeyboardStep(onNext: () -> Unit) {
         TextButton(onClick = onNext) {
             Text("I've enabled it", color = MaterialTheme.colorScheme.primary)
         }
+        TextButton(onClick = onBack) {
+            Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+        }
     }
 }
 
 @Composable
-fun AllSetStep(onFinish: () -> Unit) {
+fun AllSetStep(onFinish: () -> Unit, onBack: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "All set!",
@@ -281,6 +296,9 @@ fun AllSetStep(onFinish: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("Finish", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+        }
+        TextButton(onClick = onBack) {
+            Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
         }
     }
 }
