@@ -148,6 +148,7 @@ class VoiceManager(private val context: Context) {
                 if (!PermissionUtils.hasMicPermission(context)) {
                     stateMachine.setError("Microphone permission denied")
                     hapticManager.vibrateError()
+                    context.startActivity(PermissionActivity.createIntent(context))
                     return@launch
                 }
 

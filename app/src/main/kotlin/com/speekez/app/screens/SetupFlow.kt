@@ -1,13 +1,18 @@
 package com.speekez.app.screens
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.speekez.security.EncryptedPreferencesManager
 import com.speekez.core.ApiMode
+import com.speekez.voice.PermissionUtils
 
 @Composable
 fun SetupFlow(onSetupComplete: () -> Unit) {
@@ -69,9 +75,14 @@ fun SetupFlow(onSetupComplete: () -> Unit) {
                         onNext = { currentStep = 4 },
                         onBack = { currentStep = 2 }
                     )
-                    4 -> AllSetStep(
-                        onFinish = onSetupComplete,
+                    4 -> MicPermissionStep(
+                        onNext = { currentStep = 5 },
+                        onSkip = { currentStep = 5 },
                         onBack = { currentStep = 3 }
+                    )
+                    5 -> AllSetStep(
+                        onFinish = onSetupComplete,
+                        onBack = { currentStep = 4 }
                     )
                 }
             }
@@ -268,6 +279,75 @@ fun EnableKeyboardStep(onNext: () -> Unit, onBack: () -> Unit) {
         TextButton(onClick = onNext) {
             Text("I've enabled it", color = MaterialTheme.colorScheme.primary)
         }
+        TextButton(onClick = onBack) {
+            Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+        }
+    }
+}
+
+@Composable
+fun MicPermissionStep(onNext: () -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
+    val context = LocalContext.current
+    var hasPermission by remember { mutableStateOf(PermissionUtils.hasMicPermission(context)) }
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasPermission = isGranted
+        if (isGranted) {
+            onNext()
+        }
+    }
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "Microphone Access",
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "SpeekEZ needs microphone access to transcribe your voice to text. You can grant this now or later in settings.",
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+
+        if (hasPermission) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Permission Granted",
+                tint = Color(0xFF00D4AA),
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        Button(
+            onClick = {
+                if (hasPermission) {
+                    onNext()
+                } else {
+                    launcher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        ) {
+            Text(
+                if (hasPermission) "Continue" else "Grant Permission",
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (!hasPermission) {
+            TextButton(onClick = onSkip) {
+                Text("Skip for now", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+            }
+        }
+
         TextButton(onClick = onBack) {
             Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
         }
