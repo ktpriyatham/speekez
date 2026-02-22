@@ -120,6 +120,10 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
 
                 var isExpanded by remember { mutableStateOf(false) }
 
+                LaunchedEffect(isExpanded) {
+                    updateWindowFocusable(isExpanded)
+                }
+
                 Box(modifier = Modifier.wrapContentSize()) {
                     if (isExpanded) {
                         ExpandedWidget(
@@ -145,6 +149,16 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
             }
         }
         windowManager.addView(composeView, params)
+    }
+
+    private fun updateWindowFocusable(isExpanded: Boolean) {
+        val view = composeView ?: return
+        if (isExpanded) {
+            params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        } else {
+            params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        }
+        windowManager.updateViewLayout(view, params)
     }
 
     private fun copyToClipboard(text: String) {
