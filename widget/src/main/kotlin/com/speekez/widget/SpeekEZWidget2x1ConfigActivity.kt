@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -93,20 +94,41 @@ fun PresetSelectionScreen(onPresetSelected: (Preset) -> Unit) {
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        LazyColumn {
-            items(presets) { preset ->
-                ListItem(
-                    headlineContent = { Text(preset.name) },
-                    supportingContent = { Text(preset.inputLanguages.joinToString(", ")) },
-                    leadingContent = { Text(preset.iconEmoji, style = MaterialTheme.typography.headlineSmall) },
-                    modifier = Modifier.clickable { onPresetSelected(preset) },
-                    colors = ListItemDefaults.colors(
-                        containerColor = Color.Transparent,
-                        headlineColor = Color.White,
-                        supportingColor = Color.LightGray
+        if (presets.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No presets yet",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                )
-                HorizontalDivider(color = Color(0xFF1A1A2E))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Create presets in the SpeekEZ app first",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.LightGray
+                    )
+                }
+            }
+        } else {
+            LazyColumn {
+                items(presets) { preset ->
+                    ListItem(
+                        headlineContent = { Text(preset.name) },
+                        supportingContent = { Text(preset.inputLanguages.joinToString(", ")) },
+                        leadingContent = { Text(preset.iconEmoji, style = MaterialTheme.typography.headlineSmall) },
+                        modifier = Modifier.clickable { onPresetSelected(preset) },
+                        colors = ListItemDefaults.colors(
+                            containerColor = Color.Transparent,
+                            headlineColor = Color.White,
+                            supportingColor = Color.LightGray
+                        )
+                    )
+                    HorizontalDivider(color = Color(0xFF1A1A2E))
+                }
             }
         }
     }
