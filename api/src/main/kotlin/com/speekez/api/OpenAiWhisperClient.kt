@@ -51,10 +51,10 @@ class OpenAiWhisperClient(
     private fun handleError(e: HttpException): String {
         val code = e.code()
         when (code) {
-            401 -> throw IllegalStateException("Invalid OpenAI API Key")
-            402 -> throw IllegalStateException("OpenAI Payment Required / Quota Exceeded")
-            429 -> throw IllegalStateException("OpenAI Rate Limit Exceeded")
-            in 500..599 -> throw IllegalStateException("OpenAI Server Error ($code)")
+            401 -> throw IllegalStateException("Invalid API Key for transcription")
+            402 -> throw IllegalStateException("Payment Required / Quota Exceeded")
+            429 -> throw IllegalStateException("Rate Limit Exceeded")
+            in 500..599 -> throw IllegalStateException("Transcription Server Error ($code)")
             else -> throw e
         }
     }

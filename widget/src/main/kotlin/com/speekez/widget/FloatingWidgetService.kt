@@ -132,6 +132,7 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
                             errorMessage = errorMessage,
                             onCollapse = { isExpanded = false },
                             onStartRecording = { presetId -> voiceManager.startRecording(presetId.toInt()) },
+                            onStartRecordingWithDefaults = { voiceManager.startRecordingWithDefaults() },
                             onStopRecording = { voiceManager.stopRecording() }
                         )
                     } else {
@@ -280,6 +281,7 @@ fun ExpandedWidget(
     errorMessage: String?,
     onCollapse: () -> Unit,
     onStartRecording: (Long) -> Unit,
+    onStartRecordingWithDefaults: () -> Unit,
     onStopRecording: () -> Unit
 ) {
     Card(
@@ -319,16 +321,48 @@ fun ExpandedWidget(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            LazyColumn(
-                modifier = Modifier.heightIn(max = 300.dp)
-            ) {
-                items(presets) { preset ->
-                    PresetRow(
-                        preset = preset,
-                        isRecording = voiceState == VoiceState.RECORDING,
-                        onStartRecording = { onStartRecording(preset.id) },
-                        onStopRecording = onStopRecording
-                    )
+            if (presets.isEmpty()) {
+                // Empty state: hold-to-record with defaults
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    onStartRecordingWithDefaults()
+                                    try {
+                                        awaitRelease()
+                                    } finally {
+                                        onStopRecording()
+                                    }
+                                }
+                            )
+                        },
+                    color = Color(0xFF1A1A2E),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Mic, contentDescription = "Record", tint = Color(0xFF00D4AA), modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Hold to record", color = Color.White, fontSize = 14.sp)
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 300.dp)
+                ) {
+                    items(presets) { preset ->
+                        PresetRow(
+                            preset = preset,
+                            isRecording = voiceState == VoiceState.RECORDING,
+                            onStartRecording = { onStartRecording(preset.id) },
+                            onStopRecording = onStopRecording
+                        )
+                    }
                 }
             }
         }

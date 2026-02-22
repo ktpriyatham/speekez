@@ -64,7 +64,7 @@ class OpenRouterAudioClient(
             messages = listOf(
                 OpenRouterMessage(
                     role = "system",
-                    content = "Transcribe the following audio exactly. Return only the transcribed text."
+                    content = "You are a speech-to-text transcription engine. Transcribe the audio exactly as spoken. Output ONLY the raw transcription — no quotes, no labels, no formatting, no commentary. If the audio is silent or unintelligible, output nothing."
                 ),
                 OpenRouterMessage(
                     role = "user",

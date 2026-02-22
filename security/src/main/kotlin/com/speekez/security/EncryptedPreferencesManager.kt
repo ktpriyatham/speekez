@@ -29,12 +29,14 @@ class EncryptedPreferencesManager(private val sharedPreferences: SharedPreferenc
         private const val KEY_ANTHROPIC_API_KEY = "anthropic_api_key"
         private const val KEY_API_MODE = "api_mode"
         private const val KEY_MODEL_TIER = "model_tier"
+        private const val KEY_GROQ_API_KEY = "groq_api_key"
         private const val KEY_CUSTOM_STT_MODEL = "custom_stt_model"
         private const val KEY_CUSTOM_REFINEMENT_MODEL = "custom_refinement_model"
 
         private const val PREFIX_OPENROUTER = "sk-or-"
         private const val PREFIX_OPENAI = "sk-"
         private const val PREFIX_ANTHROPIC = "sk-ant-"
+        private const val PREFIX_GROQ = "gsk_"
     }
 
     // OpenRouter Key
@@ -82,6 +84,21 @@ class EncryptedPreferencesManager(private val sharedPreferences: SharedPreferenc
 
     fun clearAnthropicKey() {
         sharedPreferences.edit().remove(KEY_ANTHROPIC_API_KEY).apply()
+    }
+
+    // Groq Key (for fast Whisper STT)
+    fun saveGroqKey(key: String): Boolean {
+        if (!key.startsWith(PREFIX_GROQ)) return false
+        sharedPreferences.edit().putString(KEY_GROQ_API_KEY, key).apply()
+        return true
+    }
+
+    fun getGroqKey(): String? = sharedPreferences.getString(KEY_GROQ_API_KEY, null)
+
+    fun hasGroqKey(): Boolean = sharedPreferences.contains(KEY_GROQ_API_KEY)
+
+    fun clearGroqKey() {
+        sharedPreferences.edit().remove(KEY_GROQ_API_KEY).apply()
     }
 
     // API Mode

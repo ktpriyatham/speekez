@@ -25,6 +25,9 @@ import android.content.Context
  * @throws IllegalStateException If the application context does not implement [VoiceManager.Provider].
  */
 fun Context.voiceManager(): Lazy<VoiceManager> {
-    val provider = this.applicationContext as? VoiceManager.Provider
-    return provider?.voiceManager ?: throw IllegalStateException("Application must implement VoiceManager.Provider")
+    return lazy {
+        val provider = applicationContext as? VoiceManager.Provider
+            ?: throw IllegalStateException("Application must implement VoiceManager.Provider")
+        provider.voiceManager.value
+    }
 }

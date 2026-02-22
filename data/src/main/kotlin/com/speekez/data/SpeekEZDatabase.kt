@@ -50,18 +50,13 @@ abstract class SpeekEZDatabase : RoomDatabase() {
                     "speekez_database"
                 )
                     .addMigrations(MIGRATION_1_2)
-                    .addCallback(object : RoomDatabase.Callback() {
-                        override fun onCreate(db: SupportSQLiteDatabase) {
-                            super.onCreate(db)
-                            INSTANCE?.let { database ->
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    PresetSeeder.seedDefaultPresetsIfEmpty(database.presetDao())
-                                }
-                            }
-                        }
-                    })
                     .build()
                 INSTANCE = instance
+                // Seed after INSTANCE is assigned (avoids race condition where
+                // onCreate callback fires before INSTANCE is set)
+                CoroutineScope(Dispatchers.IO).launch {
+                    PresetSeeder.seedDefaultPresetsIfEmpty(instance.presetDao())
+                }
                 instance
             }
         }

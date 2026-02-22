@@ -30,12 +30,25 @@ class ApiRouterManager(
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
+    private val groqRetrofit = Retrofit.Builder()
+        .baseUrl("https://api.groq.com/openai/")
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
     fun getSttClient(): SttClient? {
         val mode = prefs.getApiMode()
         return when (mode) {
             ApiMode.OPENROUTER -> {
-                val key = prefs.getOpenRouterKey() ?: return null
-                OpenRouterAudioClient(openRouterRetrofit.create(OpenRouterApi::class.java), key)
+                // Prefer Groq Whisper for speed if key is available
+                val groqKey = prefs.getGroqKey()
+                if (groqKey != null) {
+                    OpenAiWhisperClient(groqRetrofit.create(OpenAiApi::class.java), groqKey)
+                } else {
+                    // Fallback to OpenRouter chat completions (slower)
+                    val key = prefs.getOpenRouterKey() ?: return null
+                    OpenRouterAudioClient(openRouterRetrofit.create(OpenRouterApi::class.java), key)
+                }
             }
             ApiMode.SEPARATE -> {
                 val key = prefs.getOpenAiKey() ?: return null
@@ -62,13 +75,24 @@ class ApiRouterManager(
 
     fun getApiMode(): ApiMode = prefs.getApiMode()
 
+    fun hasGroqKey(): Boolean = prefs.hasGroqKey()
+
     fun getSttModel(tier: ModelTier): String {
         val mode = prefs.getApiMode()
+        val hasGroq = prefs.hasGroqKey()
         return when (mode) {
-            ApiMode.OPENROUTER -> when (tier) {
-                ModelTier.CHEAP -> "openai/whisper-large-v3-turbo"
-                ModelTier.BEST -> "openai/whisper-large-v3"
-                ModelTier.CUSTOM -> prefs.getCustomSttModel() ?: "openai/whisper-large-v3-turbo"
+            ApiMode.OPENROUTER -> {
+                if (hasGroq) {
+                    // Groq Whisper — same model regardless of tier (it's already the best/fastest)
+                    "whisper-large-v3-turbo"
+                } else {
+                    // OpenRouter chat completions fallback
+                    when (tier) {
+                        ModelTier.CHEAP -> "google/gemini-2.5-flash"
+                        ModelTier.BEST -> "openai/gpt-4o-audio-preview"
+                        ModelTier.CUSTOM -> prefs.getCustomSttModel() ?: "google/gemini-2.5-flash"
+                    }
+                }
             }
             ApiMode.SEPARATE -> "whisper-1" // OpenAI standard
             ApiMode.NO_KEYS -> ""

@@ -13,6 +13,20 @@ object PresetSeeder {
             val now = System.currentTimeMillis()
             val defaultPresets = listOf(
                 Preset(
+                    name = "Clean",
+                    iconEmoji = "\uD83C\uDFA4",
+                    inputLanguages = listOf("en"),
+                    defaultInputLanguage = "en",
+                    outputLanguages = listOf("en"),
+                    defaultOutputLanguage = "en",
+                    refinementLevel = RefinementLevel.NONE,
+                    modelTier = ModelTier.CHEAP,
+                    systemPrompt = "",
+                    usageCount = 0,
+                    createdAt = now,
+                    updatedAt = now
+                ),
+                Preset(
                     name = "AI Mode",
                     iconEmoji = "\uD83E\uDD16",
                     inputLanguages = listOf("en"),

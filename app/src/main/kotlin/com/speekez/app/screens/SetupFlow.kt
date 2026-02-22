@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.speekez.security.EncryptedPreferencesManager
 import com.speekez.core.ApiMode
 import com.speekez.voice.PermissionUtils
+import dev.patrickgold.florisboard.lib.util.InputMethodUtils
 
 @Composable
 fun SetupFlow(onSetupComplete: () -> Unit) {
@@ -250,6 +251,8 @@ fun ApiKeyStep(
 @Composable
 fun EnableKeyboardStep(onNext: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
+    val isEnabled by InputMethodUtils.observeIsFlorisboardEnabled(foregroundOnly = true)
+    val isSelected by InputMethodUtils.observeIsFlorisboardSelected(foregroundOnly = true)
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -259,26 +262,68 @@ fun EnableKeyboardStep(onNext: () -> Unit, onBack: () -> Unit) {
             fontSize = 24.sp
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Enable SpeekEZ in your system settings to start using it as your default keyboard.",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(48.dp))
-        Button(
-            onClick = {
-                val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
-                context.startActivity(intent)
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().height(56.dp)
-        ) {
-            Text("Go to Settings", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+
+        if (!isEnabled) {
+            Text(
+                text = "Enable SpeekEZ in your system settings to start using it as your keyboard.",
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+            Button(
+                onClick = { InputMethodUtils.showImeEnablerActivity(context) },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Text("Enable SpeekEZ Keyboard", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+            }
+        } else if (!isSelected) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Keyboard Enabled",
+                tint = Color(0xFF00D4AA),
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Keyboard enabled! Now select SpeekEZ as your default keyboard.",
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+            Button(
+                onClick = { InputMethodUtils.showImePicker(context) },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Text("Select SpeekEZ", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+            }
+        } else {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Keyboard Ready",
+                tint = Color(0xFF00D4AA),
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "SpeekEZ is your active keyboard!",
+                color = Color(0xFF00D4AA),
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+            Button(
+                onClick = onNext,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Text("Continue", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+            }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
-        TextButton(onClick = onNext) {
-            Text("I've enabled it", color = MaterialTheme.colorScheme.primary)
-        }
         TextButton(onClick = onBack) {
             Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
         }

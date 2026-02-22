@@ -45,6 +45,7 @@ fun ModelSettingsScreen() {
     var modelTier by remember { mutableStateOf(prefs.getModelTier()) }
 
     var openRouterKey by remember { mutableStateOf(prefs.getOpenRouterKey() ?: "") }
+    var groqKey by remember { mutableStateOf(prefs.getGroqKey() ?: "") }
     var openAiKey by remember { mutableStateOf(prefs.getOpenAiKey() ?: "") }
     var anthropicKey by remember { mutableStateOf(prefs.getAnthropicKey() ?: "") }
 
@@ -52,6 +53,7 @@ fun ModelSettingsScreen() {
     var customRefinementModel by remember { mutableStateOf(prefs.getCustomRefinementModel() ?: "") }
 
     var showOpenRouterKey by remember { mutableStateOf(false) }
+    var showGroqKey by remember { mutableStateOf(false) }
     var showOpenAiKey by remember { mutableStateOf(false) }
     var showAnthropicKey by remember { mutableStateOf(false) }
 
@@ -128,6 +130,24 @@ fun ModelSettingsScreen() {
                 prefix = "sk-or-",
                 isValid = openRouterKey.startsWith("sk-or-")
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            ApiKeyField(
+                label = "Groq API Key (Fast Transcription)",
+                value = groqKey,
+                onValueChange = { groqKey = it },
+                isVisible = showGroqKey,
+                onToggleVisibility = { showGroqKey = !showGroqKey },
+                prefix = "gsk_",
+                isValid = groqKey.startsWith("gsk_")
+            )
+            if (groqKey.isEmpty() || !groqKey.startsWith("gsk_")) {
+                Text(
+                    text = "Add a free Groq key for 10x faster transcription. Get one at groq.com",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         } else {
             ApiKeyField(
                 label = "OpenAI API Key",
@@ -205,6 +225,9 @@ fun ModelSettingsScreen() {
                         prefs.saveModelTier(modelTier)
                         if (apiMode == ApiMode.OPENROUTER) {
                             prefs.saveOpenRouterKey(openRouterKey)
+                            if (groqKey.isNotEmpty() && groqKey.startsWith("gsk_")) {
+                                prefs.saveGroqKey(groqKey)
+                            }
                         } else {
                             prefs.saveOpenAiKey(openAiKey)
                             prefs.saveAnthropicKey(anthropicKey)
@@ -256,7 +279,9 @@ fun ModelSettingsScreen() {
                         anthropicKey = ""
                     } else {
                         prefs.clearOpenRouterKey()
+                        prefs.clearGroqKey()
                         openRouterKey = ""
+                        groqKey = ""
                     }
                     apiMode = targetMode
                     showSwitchModeDialog = null
@@ -345,6 +370,101 @@ fun TierButton(text: String, selected: Boolean, onClick: () -> Unit, modifier: M
     }
 }
 
+data class ModelOption(val id: String, val displayName: String, val detail: String)
+
+fun getSttModelOptions(apiMode: ApiMode, hasGroqKey: Boolean): List<ModelOption> {
+    // Latest models only, sorted by cost (cheapest first)
+    return when {
+        apiMode == ApiMode.OPENROUTER && hasGroqKey -> listOf(
+            ModelOption("distil-whisper-large-v3-en", "Distil Whisper EN", "\$0.02/hr \u00b7 English only"),
+            ModelOption("whisper-large-v3-turbo", "Whisper v3 Turbo", "\$0.04/hr \u00b7 ~10% WER \u00b7 Multilingual"),
+            ModelOption("whisper-large-v3", "Whisper v3", "\$0.11/hr \u00b7 ~8% WER \u00b7 Best accuracy")
+        )
+        apiMode == ApiMode.OPENROUTER -> listOf(
+            ModelOption("google/gemini-2.5-flash", "Gemini 2.5 Flash", "~\$0.15/M \u00b7 Fast"),
+            ModelOption("google/gemini-2.5-pro", "Gemini 2.5 Pro", "~\$1.25/M \u00b7 Great accuracy"),
+            ModelOption("openai/gpt-4o-audio-preview", "GPT-4o Audio", "~\$2.50/M \u00b7 Best accuracy")
+        )
+        apiMode == ApiMode.SEPARATE -> listOf(
+            ModelOption("gpt-4o-mini-transcribe", "GPT-4o Mini Transcribe", "~\$0.36/hr \u00b7 ~4% WER"),
+            ModelOption("gpt-4o-transcribe", "GPT-4o Transcribe", "~\$0.36/hr \u00b7 2.46% WER \u00b7 Best")
+        )
+        else -> emptyList()
+    }
+}
+
+fun getRefinementModelOptions(apiMode: ApiMode): List<ModelOption> {
+    // Latest models only, sorted by cost (cheapest first)
+    return when (apiMode) {
+        ApiMode.OPENROUTER -> listOf(
+            ModelOption("anthropic/claude-haiku-4-5", "Claude 4.5 Haiku", "\$1.00/M in \u00b7 Fast"),
+            ModelOption("anthropic/claude-sonnet-4-5", "Claude 4.5 Sonnet", "\$3.00/M in \u00b7 Best quality")
+        )
+        ApiMode.SEPARATE -> listOf(
+            ModelOption("claude-haiku-4-5-20251001", "Claude 4.5 Haiku", "\$1.00/M in \u00b7 Fast"),
+            ModelOption("claude-sonnet-4-5-20250929", "Claude 4.5 Sonnet", "\$3.00/M in \u00b7 Best quality")
+        )
+        ApiMode.NO_KEYS -> emptyList()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModelDropdown(
+    options: List<ModelOption>,
+    selectedValue: String,
+    onSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedOption = options.find { it.id == selectedValue }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        OutlinedTextField(
+            value = selectedOption?.displayName ?: if (selectedValue.isEmpty()) "Select model" else selectedValue,
+            onValueChange = {},
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(
+                                option.displayName,
+                                fontWeight = if (option.id == selectedValue) FontWeight.Bold else FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                option.detail,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
+                    },
+                    onClick = {
+                        onSelected(option.id)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun ModelLabels(
     apiMode: ApiMode,
@@ -355,10 +475,15 @@ fun ModelLabels(
     onSttChange: (String) -> Unit,
     onRefinementChange: (String) -> Unit
 ) {
+    val hasGroq = apiRouter.hasGroqKey()
     val sttModelLabel = when (modelTier) {
         ModelTier.CUSTOM -> customStt
-        ModelTier.CHEAP -> if (apiMode == ApiMode.OPENROUTER) "openai/whisper-large-v3-turbo" else "whisper-1"
-        ModelTier.BEST -> if (apiMode == ApiMode.OPENROUTER) "openai/whisper-large-v3" else "whisper-1"
+        ModelTier.CHEAP -> if (apiMode == ApiMode.OPENROUTER) {
+            if (hasGroq) "whisper-large-v3-turbo (Groq)" else "google/gemini-2.5-flash"
+        } else "whisper-1"
+        ModelTier.BEST -> if (apiMode == ApiMode.OPENROUTER) {
+            if (hasGroq) "whisper-large-v3-turbo (Groq)" else "openai/gpt-4o-audio-preview"
+        } else "gpt-4o-transcribe"
     }
 
     val refinementModelLabel = when (modelTier) {
@@ -367,19 +492,16 @@ fun ModelLabels(
         ModelTier.BEST -> "anthropic/claude-3-sonnet"
     }
 
+    val sttOptions = getSttModelOptions(apiMode, hasGroq)
+    val refinementOptions = getRefinementModelOptions(apiMode)
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text("Transcription Model", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 12.sp)
         if (modelTier == ModelTier.CUSTOM) {
-            OutlinedTextField(
-                value = customStt,
-                onValueChange = onSttChange,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
+            ModelDropdown(
+                options = sttOptions,
+                selectedValue = customStt,
+                onSelected = onSttChange
             )
         } else {
             Text(sttModelLabel, color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp, modifier = Modifier.padding(vertical = 8.dp))
@@ -389,16 +511,10 @@ fun ModelLabels(
 
         Text("Refinement Model", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 12.sp)
         if (modelTier == ModelTier.CUSTOM) {
-            OutlinedTextField(
-                value = customRefinement,
-                onValueChange = onRefinementChange,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
+            ModelDropdown(
+                options = refinementOptions,
+                selectedValue = customRefinement,
+                onSelected = onRefinementChange
             )
         } else {
             Text(refinementModelLabel, color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp, modifier = Modifier.padding(vertical = 8.dp))

@@ -45,18 +45,23 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     private var autoTransitionJob: Job? = null
+    private var autoDismissJob: Job? = null
 
     /**
-     * Transitions from IDLE to RECORDING.
+     * Transitions to RECORDING from any non-PROCESSING state.
      * Sets a 60-second timer to auto-transition to PROCESSING.
      */
     fun startRecording() {
-        if (_state.value != VoiceState.IDLE) return
+        if (_state.value == VoiceState.PROCESSING) return
+
+        // Cancel any pending auto-dismiss timers from previous DONE/ERROR
+        autoDismissJob?.cancel()
+        autoDismissJob = null
+        autoTransitionJob?.cancel()
 
         _state.value = VoiceState.RECORDING
         _errorMessage.value = null
 
-        autoTransitionJob?.cancel()
         autoTransitionJob = scope.launch {
             delay(60000)
             if (_state.value == VoiceState.RECORDING) {
@@ -86,7 +91,8 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
     fun setDone() {
         if (_state.value == VoiceState.PROCESSING) {
             _state.value = VoiceState.DONE
-            scope.launch {
+            autoDismissJob?.cancel()
+            autoDismissJob = scope.launch {
                 delay(1500)
                 if (_state.value == VoiceState.DONE) {
                     _state.value = VoiceState.IDLE
@@ -104,9 +110,10 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
     fun setError(message: String?) {
         if (_state.value == VoiceState.IDLE || _state.value == VoiceState.RECORDING || _state.value == VoiceState.PROCESSING) {
             autoTransitionJob?.cancel()
+            autoDismissJob?.cancel()
             _errorMessage.value = message
             _state.value = VoiceState.ERROR
-            scope.launch {
+            autoDismissJob = scope.launch {
                 delay(3000)
                 if (_state.value == VoiceState.ERROR) {
                     _state.value = VoiceState.IDLE
@@ -121,6 +128,8 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
      */
     fun reset() {
         autoTransitionJob?.cancel()
+        autoDismissJob?.cancel()
+        autoDismissJob = null
         _state.value = VoiceState.IDLE
         _errorMessage.value = null
     }

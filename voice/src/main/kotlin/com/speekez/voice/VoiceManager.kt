@@ -28,6 +28,7 @@ import com.speekez.data.entity.DailyStats
 import com.speekez.data.entity.Preset
 import com.speekez.data.entity.RefinementLevel
 import com.speekez.data.entity.Transcription
+import com.speekez.core.ModelTier
 import com.speekez.data.presetDao
 import com.speekez.data.transcriptionDao
 import com.speekez.security.EncryptedPreferencesManager
@@ -73,7 +74,8 @@ class VoiceManager(private val context: Context) {
         onAutoStop = {
             Log.i("VoiceManager", "AudioHandler auto-stop triggered")
             stateMachine.stopRecording()
-            handleProcessing()
+            // Don't call handleProcessing() here — the state collector handles it
+            // to avoid double-processing race condition (ISSUE-001)
         }
     }
 
@@ -113,7 +115,7 @@ class VoiceManager(private val context: Context) {
     }
 
     private fun handleProcessing() {
-        if (isProcessingAudio || !audioHandler.isRecording) return
+        if (isProcessingAudio) return
         isProcessingAudio = true
 
         val audioFile = audioHandler.stop()
@@ -121,7 +123,6 @@ class VoiceManager(private val context: Context) {
             processAudio(audioFile)
         } else {
             isProcessingAudio = false
-            // Only set error if we are currently in PROCESSING and failed to get a file
             if (stateMachine.state.value == VoiceState.PROCESSING) {
                 stateMachine.setError("Failed to capture audio")
             }
@@ -133,54 +134,94 @@ class VoiceManager(private val context: Context) {
      *
      * @param presetId The ID of the preset being used.
      */
+    /**
+     * Starts recording with default settings (clean transcription, no refinement).
+     * Used when no preset is available or selected.
+     */
+    fun startRecordingWithDefaults() {
+        Log.i(TAG, "startRecordingWithDefaults()")
+        val defaultPreset = Preset(
+            id = 0,
+            name = "Default",
+            iconEmoji = "\uD83C\uDFA4",
+            inputLanguages = listOf("en"),
+            defaultInputLanguage = "en",
+            outputLanguages = listOf("en"),
+            defaultOutputLanguage = "en",
+            refinementLevel = RefinementLevel.NONE,
+            modelTier = ModelTier.CHEAP,
+            systemPrompt = "",
+            usageCount = 0,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
+        startRecordingWithPreset(defaultPreset)
+    }
+
     fun startRecording(presetId: Int) {
         Log.i(TAG, "startRecording(presetId=$presetId)")
         scope.launch {
             try {
                 val preset = presetDao.getPresetById(presetId.toLong())
                 if (preset == null) {
-                    stateMachine.setError("Preset not found")
-                    hapticManager.vibrateError()
+                    Log.w(TAG, "Preset $presetId not found, using defaults")
+                    startRecordingWithDefaults()
                     return@launch
                 }
                 activePreset = preset
-
-                if (!PermissionUtils.hasMicPermission(context)) {
-                    stateMachine.setError("Microphone permission denied")
-                    hapticManager.vibrateError()
-                    context.startActivity(PermissionActivity.createIntent(context))
-                    return@launch
-                }
-
-                if (!NetworkUtils.isOnline(context)) {
-                    stateMachine.setError("No internet connection")
-                    hapticManager.vibrateError()
-                    return@launch
-                }
-
-                val sttClient = apiRouterManager.getSttClient()
-                if (sttClient == null) {
-                    stateMachine.setError("API key not configured")
-                    hapticManager.vibrateError()
-                    return@launch
-                }
-
-                stateMachine.startRecording()
-                hapticManager.vibrateStart()
-                if (!audioHandler.start()) {
-                    Log.e(TAG, "AudioHandler failed to start; resetting state machine")
-                    stateMachine.reset()
-                    hapticManager.vibrateError()
-                    return@launch
-                }
-                recordingStartTime = System.currentTimeMillis()
-                AccessibilityUtils.announce(context, "Recording started")
+                beginRecording()
             } catch (e: Exception) {
                 Log.e(TAG, "Error starting recording", e)
                 stateMachine.setError(e.message ?: "Failed to start recording")
                 hapticManager.vibrateError()
             }
         }
+    }
+
+    private fun startRecordingWithPreset(preset: Preset) {
+        scope.launch {
+            try {
+                activePreset = preset
+                beginRecording()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error starting recording with preset", e)
+                stateMachine.setError(e.message ?: "Failed to start recording")
+                hapticManager.vibrateError()
+            }
+        }
+    }
+
+    private suspend fun beginRecording() {
+        if (!PermissionUtils.hasMicPermission(context)) {
+            stateMachine.setError("Microphone permission denied")
+            hapticManager.vibrateError()
+            context.startActivity(PermissionActivity.createIntent(context))
+            return
+        }
+
+        if (!NetworkUtils.isOnline(context)) {
+            stateMachine.setError("No internet connection")
+            hapticManager.vibrateError()
+            return
+        }
+
+        val sttClient = apiRouterManager.getSttClient()
+        if (sttClient == null) {
+            stateMachine.setError("API key not configured")
+            hapticManager.vibrateError()
+            return
+        }
+
+        stateMachine.startRecording()
+        hapticManager.vibrateStart()
+        if (!audioHandler.start()) {
+            Log.e(TAG, "AudioHandler failed to start; resetting state machine")
+            stateMachine.reset()
+            hapticManager.vibrateError()
+            return
+        }
+        recordingStartTime = System.currentTimeMillis()
+        AccessibilityUtils.announce(context, "Recording started")
     }
 
     /**
