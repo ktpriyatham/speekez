@@ -498,13 +498,5 @@ fun LanguageMultiSelect(
                 )
             }
         }
-        if (selectedLanguages.size > 1) {
-            Text(
-                text = "Long press a selected language to set as default",
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
     }
 }
