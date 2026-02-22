@@ -163,7 +163,12 @@ class VoiceManager(private val context: Context) {
 
                 stateMachine.startRecording()
                 hapticManager.vibrateStart()
-                audioHandler.start()
+                if (!audioHandler.start()) {
+                    Log.e(TAG, "AudioHandler failed to start; resetting state machine")
+                    stateMachine.reset()
+                    hapticManager.vibrateError()
+                    return@launch
+                }
                 recordingStartTime = System.currentTimeMillis()
                 AccessibilityUtils.announce(context, "Recording started")
             } catch (e: Exception) {

@@ -45,9 +45,11 @@ class AudioHandler(private val context: Context) {
 
     /**
      * Initializes and starts recording audio.
+     *
+     * @return True if recording started successfully, false otherwise.
      */
-    fun start() {
-        if (isRecording) return
+    fun start(): Boolean {
+        if (isRecording) return false
 
         try {
             val timestamp = System.currentTimeMillis()
@@ -75,9 +77,11 @@ class AudioHandler(private val context: Context) {
             isRecording = true
             startTimer()
             Log.i(TAG, "Started recording: ${file.absolutePath}")
+            return true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start recording", e)
             cleanup()
+            return false
         }
     }
 

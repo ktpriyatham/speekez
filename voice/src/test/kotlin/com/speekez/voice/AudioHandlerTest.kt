@@ -118,6 +118,16 @@ class AudioHandlerTest {
     }
 
     @Test
+    fun `start returns false on failure`() {
+        every { anyConstructed<MediaRecorder>().prepare() } throws RuntimeException("Prepare failed")
+        
+        val result = audioHandler.start()
+        
+        assertFalse(result)
+        assertFalse(audioHandler.isRecording)
+    }
+
+    @Test
     fun `auto stop after 60 seconds`() = runTest(testDispatcher) {
         var autoStopped = false
         audioHandler.onAutoStop = { autoStopped = true }
