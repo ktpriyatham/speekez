@@ -57,7 +57,12 @@ fun DashboardScreen() {
 
     if (allStats == null) {
         // Still loading from database
-        Box(modifier = Modifier.fillMaxSize())
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
     } else if (allStats!!.isEmpty()) {
         EmptyState(
             icon = Icons.Default.BarChart,
