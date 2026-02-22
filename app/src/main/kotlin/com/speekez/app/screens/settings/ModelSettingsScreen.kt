@@ -58,7 +58,6 @@ fun ModelSettingsScreen() {
     var showAnthropicKey by remember { mutableStateOf(false) }
 
     var isTestingApi by remember { mutableStateOf(false) }
-    var showSwitchModeDialog by remember { mutableStateOf<ApiMode?>(null) }
 
     val snackbarHostState = LocalSnackbarHostState.current
     val scrollState = rememberScrollState()
@@ -83,11 +82,8 @@ fun ModelSettingsScreen() {
             SegmentedButton(
                 selected = apiMode == ApiMode.OPENROUTER,
                 onClick = {
-                    if (apiMode == ApiMode.SEPARATE && (openAiKey.isNotEmpty() || anthropicKey.isNotEmpty())) {
-                        showSwitchModeDialog = ApiMode.OPENROUTER
-                    } else {
-                        apiMode = ApiMode.OPENROUTER
-                    }
+                    apiMode = ApiMode.OPENROUTER
+                    prefs.saveApiMode(ApiMode.OPENROUTER)
                 },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                 colors = SegmentedButtonDefaults.colors(
@@ -102,11 +98,8 @@ fun ModelSettingsScreen() {
             SegmentedButton(
                 selected = apiMode == ApiMode.SEPARATE,
                 onClick = {
-                    if (apiMode == ApiMode.OPENROUTER && openRouterKey.isNotEmpty()) {
-                        showSwitchModeDialog = ApiMode.SEPARATE
-                    } else {
-                        apiMode = ApiMode.SEPARATE
-                    }
+                    apiMode = ApiMode.SEPARATE
+                    prefs.saveApiMode(ApiMode.SEPARATE)
                 },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                 colors = SegmentedButtonDefaults.colors(
@@ -132,7 +125,7 @@ fun ModelSettingsScreen() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             ApiKeyField(
-                label = "Groq API Key (Fast Transcription)",
+                label = "Groq API Key — Optional (Fast Transcription)",
                 value = groqKey,
                 onValueChange = { groqKey = it },
                 isVisible = showGroqKey,
@@ -263,44 +256,6 @@ fun ModelSettingsScreen() {
                 Text("Save & Test API", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         }
-
-    }
-
-    if (showSwitchModeDialog != null) {
-        AlertDialog(
-            onDismissRequest = { showSwitchModeDialog = null },
-            title = { Text("Switch Mode?") },
-            text = { Text("Switching modes will clear your current API keys. Do you want to continue?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    val targetMode = showSwitchModeDialog!!
-                    if (targetMode == ApiMode.OPENROUTER) {
-                        prefs.clearOpenAiKey()
-                        prefs.clearAnthropicKey()
-                        openAiKey = ""
-                        anthropicKey = ""
-                    } else {
-                        prefs.clearOpenRouterKey()
-                        prefs.clearGroqKey()
-                        openRouterKey = ""
-                        groqKey = ""
-                    }
-                    apiMode = targetMode
-                    prefs.saveApiMode(targetMode)
-                    showSwitchModeDialog = null
-                }) {
-                    Text("Clear & Switch", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSwitchModeDialog = null }) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
     }
 }
 
