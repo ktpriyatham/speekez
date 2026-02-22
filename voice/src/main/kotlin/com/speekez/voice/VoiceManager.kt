@@ -67,6 +67,7 @@ class VoiceManager(private val context: Context) {
 
     private var activePreset: Preset? = null
     private var recordingStartTime: Long = 0
+    private var isProcessingAudio = false
 
     private val audioHandler = AudioHandler(context).apply {
         onAutoStop = {
@@ -112,12 +113,14 @@ class VoiceManager(private val context: Context) {
     }
 
     private fun handleProcessing() {
-        if (!audioHandler.isRecording) return
+        if (isProcessingAudio || !audioHandler.isRecording) return
+        isProcessingAudio = true
 
         val audioFile = audioHandler.stop()
         if (audioFile != null) {
             processAudio(audioFile)
         } else {
+            isProcessingAudio = false
             // Only set error if we are currently in PROCESSING and failed to get a file
             if (stateMachine.state.value == VoiceState.PROCESSING) {
                 stateMachine.setError("Failed to capture audio")
@@ -191,7 +194,10 @@ class VoiceManager(private val context: Context) {
     }
 
     private fun processAudio(file: File) {
-        val preset = activePreset ?: return
+        val preset = activePreset ?: run {
+            isProcessingAudio = false
+            return
+        }
         val durationMs = System.currentTimeMillis() - recordingStartTime
 
         scope.launch(Dispatchers.IO) {
@@ -253,6 +259,7 @@ class VoiceManager(private val context: Context) {
                 if (file.exists()) {
                     file.delete()
                 }
+                isProcessingAudio = false
             }
         }
     }
