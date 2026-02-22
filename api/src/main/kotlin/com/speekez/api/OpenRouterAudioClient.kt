@@ -1,7 +1,7 @@
 package com.speekez.api
 
 import com.speekez.core.NetworkUtils
-import java.util.Base64
+import android.util.Base64
 import retrofit2.HttpException
 import retrofit2.http.Body
 import retrofit2.http.Header
@@ -57,7 +57,7 @@ class OpenRouterAudioClient(
 ) : SttClient {
     override suspend fun transcribe(audioFile: File, model: String, languages: List<String>): String {
         val audioBytes = audioFile.readBytes()
-        val base64Audio = Base64.getEncoder().encodeToString(audioBytes)
+        val base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
 
         val request = OpenRouterRequest(
             model = model,
@@ -96,7 +96,7 @@ class OpenRouterAudioClient(
         }.getOrThrow()
     }
 
-    private fun handleError(e: HttpException): String {
+    private fun handleError(e: HttpException): Nothing {
         val code = e.code()
         when (code) {
             401 -> throw IllegalStateException("Invalid OpenRouter API Key")

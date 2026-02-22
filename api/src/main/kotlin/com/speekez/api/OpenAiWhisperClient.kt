@@ -48,7 +48,7 @@ class OpenAiWhisperClient(
         }.getOrThrow()
     }
 
-    private fun handleError(e: HttpException): String {
+    private fun handleError(e: HttpException): Nothing {
         val code = e.code()
         when (code) {
             401 -> throw IllegalStateException("Invalid API Key for transcription")

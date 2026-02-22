@@ -21,6 +21,11 @@ import dev.patrickgold.florisboard.clipboardManager
 class VoiceShortcutActivity : ComponentActivity() {
     private val TAG = "VoiceShortcutActivity"
 
+    private val transcriptionListener: (String) -> Unit = { text ->
+        val clipboard = (application as FlorisApplication).clipboardManager.value
+        clipboard.addNewPlaintext(text)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -33,11 +38,8 @@ class VoiceShortcutActivity : ComponentActivity() {
 
         val voiceManager = voiceManager().value
 
-        // Ensure transcription results are handled (e.g., copy to clipboard)
-        voiceManager.onTranscriptionComplete = { text ->
-            val clipboard = (application as FlorisApplication).clipboardManager.value
-            clipboard.addNewPlaintext(text)
-        }
+        // Register transcription listener
+        voiceManager.addTranscriptionListener(transcriptionListener)
 
         // Start recording
         voiceManager.startRecording(presetId)
@@ -119,11 +121,16 @@ class VoiceShortcutActivity : ComponentActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         val voiceManager = voiceManager().value
         if (voiceManager.isRecording()) {
             voiceManager.cancelRecording()
         }
+    }
+
+    override fun onDestroy() {
+        voiceManager().value.removeTranscriptionListener(transcriptionListener)
+        super.onDestroy()
     }
 }

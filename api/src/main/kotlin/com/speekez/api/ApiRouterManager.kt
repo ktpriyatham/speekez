@@ -18,23 +18,29 @@ class ApiRouterManager(
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private val openRouterRetrofit = Retrofit.Builder()
-        .baseUrl("https://openrouter.ai/")
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private val openRouterRetrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://openrouter.ai/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
-    private val openAiRetrofit = Retrofit.Builder()
-        .baseUrl("https://api.openai.com/")
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private val openAiRetrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://api.openai.com/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
-    private val groqRetrofit = Retrofit.Builder()
-        .baseUrl("https://api.groq.com/openai/")
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private val groqRetrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://api.groq.com/openai/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
     fun getSttClient(): SttClient? {
         val mode = prefs.getApiMode()

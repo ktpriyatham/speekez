@@ -483,7 +483,7 @@ fun ModelLabels(
         ModelTier.CUSTOM -> customStt
         ModelTier.CHEAP -> if (apiMode == ApiMode.OPENROUTER) {
             if (hasGroq) "whisper-large-v3-turbo (Groq)" else "google/gemini-2.5-flash"
-        } else "whisper-1"
+        } else "gpt-4o-mini-transcribe"
         ModelTier.BEST -> if (apiMode == ApiMode.OPENROUTER) {
             if (hasGroq) "whisper-large-v3-turbo (Groq)" else "openai/gpt-4o-audio-preview"
         } else "gpt-4o-transcribe"

@@ -37,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.speekez.voice.VoiceState
 import com.speekez.voice.voiceManager
 import kotlinx.coroutines.delay
@@ -44,6 +46,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class SpeekEZWidgetRecordingActivity : ComponentActivity() {
+
+    private val transcriptionListener: (String) -> Unit = { result ->
+        copyToClipboard(result)
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,35 +78,32 @@ class SpeekEZWidgetRecordingActivity : ComponentActivity() {
         // Start recording immediately
         voiceManager.startRecording(presetId.toInt())
 
-        // Set up completion callback
-        voiceManager.onTranscriptionComplete = { result ->
-            copyToClipboard(result)
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // Register completion listener
+        voiceManager.addTranscriptionListener(transcriptionListener)
 
         // Observe state to finish activity when done or error
         lifecycleScope.launch {
-            voiceManager.state.collect { state ->
-                if (state == VoiceState.DONE) {
-                    delay(1500)
-                    finish()
-                } else if (state == VoiceState.ERROR) {
-                    delay(3000)
-                    finish()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                voiceManager.state.collect { state ->
+                    if (state == VoiceState.DONE) {
+                        delay(1500)
+                        finish()
+                    } else if (state == VoiceState.ERROR) {
+                        delay(3000)
+                        finish()
+                    }
                 }
             }
         }
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         val voiceManager = voiceManager().value
+        voiceManager.removeTranscriptionListener(transcriptionListener)
         if (voiceManager.isRecording()) {
             voiceManager.cancelRecording()
         }
-        voiceManager.onTranscriptionComplete = null
+        super.onDestroy()
     }
 
     private fun copyToClipboard(text: String) {

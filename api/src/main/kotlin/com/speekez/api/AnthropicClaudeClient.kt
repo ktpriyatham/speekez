@@ -85,7 +85,7 @@ class AnthropicClaudeClient(
         }
     }
 
-    private fun handleError(e: HttpException): String {
+    private fun handleError(e: HttpException): Nothing {
         val code = e.code()
         when (code) {
             401 -> throw IllegalStateException("Invalid Anthropic API Key")

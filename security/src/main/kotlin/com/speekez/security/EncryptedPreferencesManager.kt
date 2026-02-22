@@ -2,6 +2,7 @@ package com.speekez.security
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.speekez.core.ApiMode
@@ -9,20 +10,32 @@ import com.speekez.core.ModelTier
 
 class EncryptedPreferencesManager(private val sharedPreferences: SharedPreferences) {
 
-    constructor(context: Context) : this(
-        EncryptedSharedPreferences.create(
-            context,
-            FILE_NAME,
-            MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build(),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-    )
+    constructor(context: Context) : this(createEncryptedPrefs(context))
 
     companion object {
         private const val FILE_NAME = "speekez_secure_prefs"
+
+        private fun createEncryptedPrefs(context: Context): SharedPreferences {
+            return try {
+                buildEncryptedPrefs(context)
+            } catch (e: Exception) {
+                Log.e("EncryptedPrefsManager", "Encrypted prefs corrupted, recreating", e)
+                context.deleteSharedPreferences(FILE_NAME)
+                buildEncryptedPrefs(context)
+            }
+        }
+
+        private fun buildEncryptedPrefs(context: Context): SharedPreferences {
+            return EncryptedSharedPreferences.create(
+                context,
+                FILE_NAME,
+                MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build(),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
 
         private const val KEY_OPENROUTER_API_KEY = "openrouter_api_key"
         private const val KEY_OPENAI_API_KEY = "openai_api_key"

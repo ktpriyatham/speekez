@@ -128,6 +128,7 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
      */
     fun reset() {
         autoTransitionJob?.cancel()
+        autoTransitionJob = null
         autoDismissJob?.cancel()
         autoDismissJob = null
         _state.value = VoiceState.IDLE

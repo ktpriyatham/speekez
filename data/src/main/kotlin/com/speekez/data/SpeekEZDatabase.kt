@@ -14,9 +14,11 @@ import com.speekez.data.entity.Preset
 import com.speekez.data.entity.Transcription
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import android.util.Log
 import com.speekez.data.seed.PresetSeeder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 @Database(
@@ -52,10 +54,12 @@ abstract class SpeekEZDatabase : RoomDatabase() {
                     .addMigrations(MIGRATION_1_2)
                     .build()
                 INSTANCE = instance
-                // Seed after INSTANCE is assigned (avoids race condition where
-                // onCreate callback fires before INSTANCE is set)
-                CoroutineScope(Dispatchers.IO).launch {
-                    PresetSeeder.seedDefaultPresetsIfEmpty(instance.presetDao())
+                CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+                    try {
+                        PresetSeeder.seedDefaultPresetsIfEmpty(instance.presetDao())
+                    } catch (e: Exception) {
+                        Log.e("SpeekEZDatabase", "Failed to seed default presets", e)
+                    }
                 }
                 instance
             }

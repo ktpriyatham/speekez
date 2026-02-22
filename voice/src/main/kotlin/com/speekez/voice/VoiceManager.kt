@@ -60,7 +60,15 @@ class VoiceManager(private val context: Context) {
     private val dailyStatsDao by lazy { context.dailyStatsDao() }
 
     var inputConnectionProvider: (() -> InputConnection?)? = null
-    var onTranscriptionComplete: ((String) -> Unit)? = null
+    private val transcriptionListeners = mutableSetOf<(String) -> Unit>()
+
+    fun addTranscriptionListener(listener: (String) -> Unit) {
+        transcriptionListeners.add(listener)
+    }
+
+    fun removeTranscriptionListener(listener: (String) -> Unit) {
+        transcriptionListeners.remove(listener)
+    }
 
     var hapticEnabledProvider: () -> Boolean
         get() = hapticManager.hapticEnabledProvider
@@ -68,6 +76,7 @@ class VoiceManager(private val context: Context) {
 
     private var activePreset: Preset? = null
     private var recordingStartTime: Long = 0
+    private var recordingDurationMs: Long = 0
     private var isProcessingAudio = false
 
     private val audioHandler = AudioHandler(context).apply {
@@ -117,6 +126,7 @@ class VoiceManager(private val context: Context) {
     private fun handleProcessing() {
         if (isProcessingAudio) return
         isProcessingAudio = true
+        recordingDurationMs = System.currentTimeMillis() - recordingStartTime
 
         val audioFile = audioHandler.stop()
         if (audioFile != null) {
@@ -241,7 +251,7 @@ class VoiceManager(private val context: Context) {
             stateMachine.setError("No preset selected")
             return
         }
-        val durationMs = System.currentTimeMillis() - recordingStartTime
+        val durationMs = recordingDurationMs
 
         scope.launch(Dispatchers.IO) {
             try {
@@ -270,8 +280,8 @@ class VoiceManager(private val context: Context) {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = ClipData.newPlainText("SpeekEZ", finalResult)
                         clipboard.setPrimaryClip(clip)
-                        onTranscriptionComplete?.invoke(finalResult)
                     }
+                    transcriptionListeners.forEach { it(finalResult) }
                 }
 
                 val wordCount = finalResult.split(Regex("\\s+")).filter { it.isNotBlank() }.size

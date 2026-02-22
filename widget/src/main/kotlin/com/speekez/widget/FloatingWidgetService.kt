@@ -88,6 +88,10 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
 
     private val voiceManager by lazy { voiceManager().value }
 
+    private val transcriptionListener: (String) -> Unit = { text ->
+        copyToClipboard(text)
+    }
+
     override fun onCreate() {
         super.onCreate()
         savedStateRegistryController.performAttach()
@@ -102,9 +106,7 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
 
         setupComposeView()
 
-        voiceManager.onTranscriptionComplete = { text ->
-            copyToClipboard(text)
-        }
+        voiceManager.addTranscriptionListener(transcriptionListener)
     }
 
     private fun setupComposeView() {
@@ -133,7 +135,8 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
                             onCollapse = { isExpanded = false },
                             onStartRecording = { presetId -> voiceManager.startRecording(presetId.toInt()) },
                             onStartRecordingWithDefaults = { voiceManager.startRecordingWithDefaults() },
-                            onStopRecording = { voiceManager.stopRecording() }
+                            onStopRecording = { voiceManager.stopRecording() },
+                            onCancelRecording = { voiceManager.cancelRecording() }
                         )
                     } else {
                         CollapsedWidget(
@@ -169,10 +172,11 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        voiceManager.removeTranscriptionListener(transcriptionListener)
         composeView?.let {
             windowManager.removeView(it)
         }
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -282,7 +286,8 @@ fun ExpandedWidget(
     onCollapse: () -> Unit,
     onStartRecording: (Long) -> Unit,
     onStartRecordingWithDefaults: () -> Unit,
-    onStopRecording: () -> Unit
+    onStopRecording: () -> Unit,
+    onCancelRecording: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -331,10 +336,11 @@ fun ExpandedWidget(
                             detectTapGestures(
                                 onPress = {
                                     onStartRecordingWithDefaults()
-                                    try {
-                                        awaitRelease()
-                                    } finally {
+                                    val released = tryAwaitRelease()
+                                    if (released) {
                                         onStopRecording()
+                                    } else {
+                                        onCancelRecording()
                                     }
                                 }
                             )
@@ -360,7 +366,8 @@ fun ExpandedWidget(
                             preset = preset,
                             isRecording = voiceState == VoiceState.RECORDING,
                             onStartRecording = { onStartRecording(preset.id) },
-                            onStopRecording = onStopRecording
+                            onStopRecording = onStopRecording,
+                            onCancelRecording = onCancelRecording
                         )
                     }
                 }
@@ -401,7 +408,8 @@ fun PresetRow(
     preset: Preset,
     isRecording: Boolean,
     onStartRecording: () -> Unit,
-    onStopRecording: () -> Unit
+    onStopRecording: () -> Unit,
+    onCancelRecording: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
 
@@ -414,11 +422,12 @@ fun PresetRow(
                     onPress = {
                         isPressed = true
                         onStartRecording()
-                        try {
-                            awaitRelease()
-                        } finally {
-                            isPressed = false
+                        val released = tryAwaitRelease()
+                        isPressed = false
+                        if (released) {
                             onStopRecording()
+                        } else {
+                            onCancelRecording()
                         }
                     }
                 )

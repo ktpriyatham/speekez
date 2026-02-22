@@ -91,13 +91,14 @@ class AudioHandler(private val context: Context) {
 
         return try {
             mediaRecorder?.stop()
-            mediaRecorder?.reset()
             Log.i(TAG, "Stopped recording")
             currentFile
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping MediaRecorder", e)
             null
         } finally {
+            mediaRecorder?.release()
+            mediaRecorder = null
             isRecording = false
         }
     }
@@ -110,10 +111,11 @@ class AudioHandler(private val context: Context) {
 
         try {
             mediaRecorder?.stop()
-            mediaRecorder?.reset()
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping MediaRecorder during cancel", e)
         } finally {
+            mediaRecorder?.release()
+            mediaRecorder = null
             isRecording = false
             currentFile?.delete()
             currentFile = null
@@ -135,6 +137,8 @@ class AudioHandler(private val context: Context) {
             mediaRecorder?.release()
             mediaRecorder = null
             isRecording = false
+            currentFile?.delete()
+            currentFile = null
         }
     }
 }
