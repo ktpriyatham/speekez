@@ -171,6 +171,7 @@ fun PresetEditForm(
     var modelTier by remember { mutableStateOf(preset.modelTier) }
     var systemPrompt by remember { mutableStateOf(preset.systemPrompt) }
 
+    var validationError by remember { mutableStateOf<String?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     val availableLanguages = listOf("en", "te", "hi", "es", "fr", "de", "it", "ja", "ko", "zh")
@@ -200,7 +201,12 @@ fun PresetEditForm(
                     fontSize = 20.sp
                 )
                 TextButton(onClick = {
-                    if (name.isNotBlank() && iconEmoji.isNotBlank()) {
+                    if (name.isBlank()) {
+                        validationError = "Preset name is required"
+                    } else if (iconEmoji.isBlank()) {
+                        validationError = "Preset icon is required"
+                    } else {
+                        validationError = null
                         onSave(
                             preset.copy(
                                 name = name,
@@ -221,12 +227,24 @@ fun PresetEditForm(
                 }
             }
 
+            validationError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp).align(Alignment.End)
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // Name
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = {
+                    name = it
+                    validationError = null
+                },
                 label = { Text("Name") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -262,6 +280,7 @@ fun PresetEditForm(
                     onValueChange = {
                         if (it.length <= 2) {
                             iconEmoji = it
+                            validationError = null
                         }
                     },
                     label = { Text("Icon (Emoji)") },
