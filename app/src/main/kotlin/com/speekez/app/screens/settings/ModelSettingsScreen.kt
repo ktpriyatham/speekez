@@ -436,7 +436,7 @@ fun CostEstimate(tier: ModelTier) {
 private fun isKeySetupValid(mode: ApiMode, orKey: String, oaiKey: String, antKey: String): Boolean {
     return when (mode) {
         ApiMode.OPENROUTER -> orKey.startsWith("sk-or-")
-        ApiMode.SEPARATE -> oaiKey.startsWith("sk-") && antKey.startsWith("sk-ant-")
+        ApiMode.SEPARATE -> oaiKey.startsWith("sk-") && !oaiKey.startsWith("sk-or-") && !oaiKey.startsWith("sk-ant-") && antKey.startsWith("sk-ant-")
         ApiMode.NO_KEYS -> false
     }
 }
