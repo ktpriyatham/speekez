@@ -53,7 +53,7 @@ class AnthropicClaudeClient(
         )
 
         return NetworkUtils.safeApiCall {
-            val response = api.refine(apiKey = apiKey, request = request)
+            val response = api.refine(apiKey = apiKey, version = "2023-06-01", request = request)
             response.content.firstOrNull()?.text
                 ?: throw IllegalStateException("Empty response from Anthropic")
         }.onFailure { e ->
@@ -61,6 +61,28 @@ class AnthropicClaudeClient(
                 handleError(e)
             }
         }.getOrThrow()
+    }
+
+    override suspend fun validateKey(model: String): Boolean {
+        val request = AnthropicRequest(
+            model = model,
+            system = "test",
+            messages = listOf(
+                AnthropicMessage(role = "user", content = "test")
+            ),
+            maxTokens = 1
+        )
+
+        return NetworkUtils.safeApiCall {
+            api.refine(apiKey = apiKey, version = "2023-06-01", request = request)
+            true
+        }.getOrElse { e ->
+            if (e is HttpException && (e.code() == 401 || e.code() == 403)) {
+                false
+            } else {
+                throw e
+            }
+        }
     }
 
     private fun handleError(e: HttpException): String {

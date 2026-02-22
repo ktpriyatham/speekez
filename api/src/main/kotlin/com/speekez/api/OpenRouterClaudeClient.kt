@@ -62,6 +62,27 @@ class OpenRouterClaudeClient(
         }.getOrThrow()
     }
 
+    override suspend fun validateKey(model: String): Boolean {
+        val request = OpenRouterRefinementRequest(
+            model = model,
+            messages = listOf(
+                OpenRouterRefinementMessage(role = "user", content = "test")
+            ),
+            maxTokens = 1
+        )
+
+        return NetworkUtils.safeApiCall {
+            api.refine("Bearer $apiKey", request)
+            true
+        }.getOrElse { e ->
+            if (e is HttpException && (e.code() == 401 || e.code() == 403)) {
+                false
+            } else {
+                throw e
+            }
+        }
+    }
+
     private fun handleError(e: HttpException): String {
         val code = e.code()
         when (code) {

@@ -13,4 +13,12 @@ interface RefinementClient {
      * @return The refined text.
      */
     suspend fun refine(text: String, model: String, systemPrompt: String): String
+
+    /**
+     * Validates the API key by sending a minimal request.
+     *
+     * @param model The model identifier to use for validation.
+     * @return True if the key is valid, false if unauthorized.
+     */
+    suspend fun validateKey(model: String): Boolean
 }

@@ -31,7 +31,6 @@ import com.speekez.core.ApiMode
 import com.speekez.core.ModelTier
 import com.speekez.core.NetworkUtils
 import com.speekez.security.EncryptedPreferencesManager
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -466,14 +465,8 @@ private suspend fun performApiTest(context: android.content.Context, apiRouter: 
     if (!NetworkUtils.isOnline(context)) {
         throw IllegalStateException("No internet connection")
     }
-    return try {
-        val client = apiRouter.getRefinementClient() ?: return false
-        val model = apiRouter.getRefinementModel(tier)
+    val client = apiRouter.getRefinementClient() ?: return false
+    val model = apiRouter.getRefinementModel(tier)
 
-        delay(1500) // Simulate network delay
-
-        true
-    } catch (e: Exception) {
-        throw e
-    }
+    return client.validateKey(model)
 }

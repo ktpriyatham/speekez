@@ -8,4 +8,8 @@ class NoOpRefinementClient : RefinementClient {
     override suspend fun refine(text: String, model: String, systemPrompt: String): String {
         return text
     }
+
+    override suspend fun validateKey(model: String): Boolean {
+        return true
+    }
 }
