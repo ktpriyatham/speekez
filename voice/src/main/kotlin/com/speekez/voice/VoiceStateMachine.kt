@@ -102,7 +102,7 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
      * @param message The error message to display.
      */
     fun setError(message: String?) {
-        if (_state.value == VoiceState.RECORDING || _state.value == VoiceState.PROCESSING) {
+        if (_state.value == VoiceState.IDLE || _state.value == VoiceState.RECORDING || _state.value == VoiceState.PROCESSING) {
             autoTransitionJob?.cancel()
             _errorMessage.value = message
             _state.value = VoiceState.ERROR
