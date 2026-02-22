@@ -93,7 +93,11 @@ class SpeekEZWidgetRecordingActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        voiceManager().value.onTranscriptionComplete = null
+        val voiceManager = voiceManager().value
+        if (voiceManager.isRecording()) {
+            voiceManager.cancelRecording()
+        }
+        voiceManager.onTranscriptionComplete = null
     }
 
     private fun copyToClipboard(text: String) {
