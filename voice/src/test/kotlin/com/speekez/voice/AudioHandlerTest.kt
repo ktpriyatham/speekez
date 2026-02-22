@@ -130,7 +130,10 @@ class AudioHandlerTest {
     @Test
     fun `auto stop after 60 seconds`() = runTest(testDispatcher) {
         var autoStopped = false
-        audioHandler.onAutoStop = { autoStopped = true }
+        audioHandler.onAutoStop = { 
+            autoStopped = true
+            audioHandler.stop()
+        }
         
         audioHandler.start()
         

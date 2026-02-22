@@ -154,7 +154,6 @@ class AudioHandler(private val context: Context) {
             if (isRecording) {
                 Log.i(TAG, "Auto-stopping recording after 60s")
                 onAutoStop?.invoke()
-                stop()
             }
         }
     }
