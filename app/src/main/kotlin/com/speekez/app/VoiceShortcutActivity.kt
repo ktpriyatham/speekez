@@ -121,8 +121,9 @@ class VoiceShortcutActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        // If we leave the activity while recording, we might want to stop or cancel?
-        // But for a shortcut, maybe it's fine to keep recording if it's a "background" thing?
-        // Actually, normally you want to stay in the activity.
+        val voiceManager = voiceManager().value
+        if (voiceManager.isRecording()) {
+            voiceManager.cancelRecording()
+        }
     }
 }
