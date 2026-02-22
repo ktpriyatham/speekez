@@ -14,6 +14,10 @@ import com.speekez.data.entity.Preset
 import com.speekez.data.entity.Transcription
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.speekez.data.seed.PresetSeeder
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Database(
     entities = [Preset::class, Transcription::class, DailyStats::class],
@@ -46,6 +50,16 @@ abstract class SpeekEZDatabase : RoomDatabase() {
                     "speekez_database"
                 )
                     .addMigrations(MIGRATION_1_2)
+                    .addCallback(object : RoomDatabase.Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            INSTANCE?.let { database ->
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    PresetSeeder.seedDefaultPresetsIfEmpty(database.presetDao())
+                                }
+                            }
+                        }
+                    })
                     .build()
                 INSTANCE = instance
                 instance
