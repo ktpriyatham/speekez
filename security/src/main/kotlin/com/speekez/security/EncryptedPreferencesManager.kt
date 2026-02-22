@@ -56,9 +56,7 @@ class EncryptedPreferencesManager(private val sharedPreferences: SharedPreferenc
 
     // OpenAI Key
     fun saveOpenAiKey(key: String): Boolean {
-        if (!key.startsWith(PREFIX_OPENAI)) return false
-        // Ensure it doesn't accidentally match other prefixes if that's a concern, 
-        // but sk- is the general OpenAI prefix.
+        if (!key.startsWith(PREFIX_OPENAI) || key.startsWith(PREFIX_OPENROUTER) || key.startsWith(PREFIX_ANTHROPIC)) return false
         sharedPreferences.edit().putString(KEY_OPENAI_API_KEY, key).apply()
         return true
     }
@@ -95,7 +93,7 @@ class EncryptedPreferencesManager(private val sharedPreferences: SharedPreferenc
 
     fun getGroqKey(): String? = sharedPreferences.getString(KEY_GROQ_API_KEY, null)
 
-    fun hasGroqKey(): Boolean = sharedPreferences.contains(KEY_GROQ_API_KEY)
+    fun hasGroqKey(): Boolean = !sharedPreferences.getString(KEY_GROQ_API_KEY, null).isNullOrBlank()
 
     fun clearGroqKey() {
         sharedPreferences.edit().remove(KEY_GROQ_API_KEY).apply()

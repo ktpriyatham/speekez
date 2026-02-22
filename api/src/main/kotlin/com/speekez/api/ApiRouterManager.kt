@@ -94,16 +94,33 @@ class ApiRouterManager(
                     }
                 }
             }
-            ApiMode.SEPARATE -> "whisper-1" // OpenAI standard
+            ApiMode.SEPARATE -> when (tier) {
+                ModelTier.CHEAP -> "gpt-4o-mini-transcribe"
+                ModelTier.BEST -> "gpt-4o-transcribe"
+                ModelTier.CUSTOM -> prefs.getCustomSttModel() ?: "gpt-4o-mini-transcribe"
+            }
             ApiMode.NO_KEYS -> ""
         }
     }
 
     fun getRefinementModel(tier: ModelTier): String {
+        val mode = prefs.getApiMode()
         return when (tier) {
-            ModelTier.CHEAP -> "anthropic/claude-3-haiku"
-            ModelTier.BEST -> "anthropic/claude-3-sonnet"
-            ModelTier.CUSTOM -> prefs.getCustomRefinementModel() ?: "anthropic/claude-3-haiku"
+            ModelTier.CHEAP -> when (mode) {
+                ApiMode.OPENROUTER -> "anthropic/claude-haiku-4-5"
+                ApiMode.SEPARATE -> "claude-haiku-4-5-20251001"
+                ApiMode.NO_KEYS -> ""
+            }
+            ModelTier.BEST -> when (mode) {
+                ApiMode.OPENROUTER -> "anthropic/claude-sonnet-4-5"
+                ApiMode.SEPARATE -> "claude-sonnet-4-5-20250929"
+                ApiMode.NO_KEYS -> ""
+            }
+            ModelTier.CUSTOM -> when (mode) {
+                ApiMode.OPENROUTER -> prefs.getCustomRefinementModel() ?: "anthropic/claude-haiku-4-5"
+                ApiMode.SEPARATE -> prefs.getCustomRefinementModel() ?: "claude-haiku-4-5-20251001"
+                ApiMode.NO_KEYS -> ""
+            }
         }
     }
 }

@@ -20,7 +20,6 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
-import kotlinx.coroutines.*
 import java.io.File
 
 /**
@@ -33,13 +32,11 @@ class AudioHandler(private val context: Context) {
     var isRecording = false
         private set
 
-    private var timerJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
     private val TAG = "AudioHandler"
 
     /**
      * Callback invoked when the recording reaches the 60-second limit.
+     * The 60s timer is owned by VoiceStateMachine to avoid duplicate timers.
      */
     var onAutoStop: (() -> Unit)? = null
 
@@ -75,7 +72,6 @@ class AudioHandler(private val context: Context) {
                 start()
             }
             isRecording = true
-            startTimer()
             Log.i(TAG, "Started recording: ${file.absolutePath}")
             return true
         } catch (e: Exception) {
@@ -92,8 +88,6 @@ class AudioHandler(private val context: Context) {
      */
     fun stop(): File? {
         if (!isRecording) return null
-
-        stopTimer()
 
         return try {
             mediaRecorder?.stop()
@@ -114,8 +108,6 @@ class AudioHandler(private val context: Context) {
     fun cancel() {
         if (!isRecording) return
 
-        stopTimer()
-
         try {
             mediaRecorder?.stop()
             mediaRecorder?.reset()
@@ -133,7 +125,6 @@ class AudioHandler(private val context: Context) {
      * Releases MediaRecorder resources.
      */
     fun cleanup() {
-        stopTimer()
         try {
             if (isRecording) {
                 mediaRecorder?.stop()
@@ -145,21 +136,5 @@ class AudioHandler(private val context: Context) {
             mediaRecorder = null
             isRecording = false
         }
-    }
-
-    private fun startTimer() {
-        stopTimer()
-        timerJob = scope.launch {
-            delay(60000)
-            if (isRecording) {
-                Log.i(TAG, "Auto-stopping recording after 60s")
-                onAutoStop?.invoke()
-            }
-        }
-    }
-
-    private fun stopTimer() {
-        timerJob?.cancel()
-        timerJob = null
     }
 }

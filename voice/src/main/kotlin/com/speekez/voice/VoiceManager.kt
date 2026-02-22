@@ -238,6 +238,7 @@ class VoiceManager(private val context: Context) {
     private fun processAudio(file: File) {
         val preset = activePreset ?: run {
             isProcessingAudio = false
+            stateMachine.setError("No preset selected")
             return
         }
         val durationMs = System.currentTimeMillis() - recordingStartTime
@@ -366,7 +367,8 @@ class VoiceManager(private val context: Context) {
      */
     fun onWindowHidden() {
         Log.i(TAG, "onWindowHidden()")
-        if (isRecording()) {
+        val currentState = stateMachine.state.value
+        if (currentState == VoiceState.RECORDING || currentState == VoiceState.PROCESSING) {
             cancelRecording()
         }
     }

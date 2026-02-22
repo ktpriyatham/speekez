@@ -227,6 +227,8 @@ fun ModelSettingsScreen() {
                             prefs.saveOpenRouterKey(openRouterKey)
                             if (groqKey.isNotEmpty() && groqKey.startsWith("gsk_")) {
                                 prefs.saveGroqKey(groqKey)
+                            } else if (groqKey.isEmpty()) {
+                                prefs.clearGroqKey()
                             }
                         } else {
                             prefs.saveOpenAiKey(openAiKey)
@@ -284,6 +286,7 @@ fun ModelSettingsScreen() {
                         groqKey = ""
                     }
                     apiMode = targetMode
+                    prefs.saveApiMode(targetMode)
                     showSwitchModeDialog = null
                 }) {
                     Text("Clear & Switch", color = MaterialTheme.colorScheme.error)
@@ -488,8 +491,8 @@ fun ModelLabels(
 
     val refinementModelLabel = when (modelTier) {
         ModelTier.CUSTOM -> customRefinement
-        ModelTier.CHEAP -> "anthropic/claude-3-haiku"
-        ModelTier.BEST -> "anthropic/claude-3-sonnet"
+        ModelTier.CHEAP -> if (apiMode == ApiMode.OPENROUTER) "anthropic/claude-haiku-4-5" else "claude-haiku-4-5"
+        ModelTier.BEST -> if (apiMode == ApiMode.OPENROUTER) "anthropic/claude-sonnet-4-5" else "claude-sonnet-4-5"
     }
 
     val sttOptions = getSttModelOptions(apiMode, hasGroq)
