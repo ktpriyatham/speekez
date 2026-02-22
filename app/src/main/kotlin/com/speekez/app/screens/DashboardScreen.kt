@@ -36,7 +36,7 @@ fun DashboardScreen() {
     val allStats by allStatsFlow.collectAsState(initial = null)
 
     val overallAvgWpmFlow = remember { transcriptionDao.getOverallAvgWpm() }
-    val overallAvgWpm by overallAvgWpmFlow.collectAsState(initial = 0f)
+    val overallAvgWpm by overallAvgWpmFlow.collectAsState(initial = null)
 
     val totalWordsFlow = remember { dailyStatsDao.getTotalWordCount() }
     val totalWordsAllTime by totalWordsFlow.collectAsState(initial = 0)
