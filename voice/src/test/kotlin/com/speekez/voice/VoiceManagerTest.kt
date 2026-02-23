@@ -115,19 +115,19 @@ class VoiceManagerTest {
     }
 
     @Test
-    fun `auto-stop after 60s transitions to PROCESSING`() = runTest {
+    fun `auto-stop after 5 minutes transitions to PROCESSING`() = runTest {
         voiceManager.startRecording(1)
         runCurrent()
-        
+
         // We need to make sure the file exists
         val pathSlot = slot<String>()
         verify { anyConstructed<MediaRecorder>().setOutputFile(capture(pathSlot)) }
         File(pathSlot.captured).createNewFile()
 
-        // Advance time by 60s
-        advanceTimeBy(60001)
+        // Advance time by 5 minutes (300s)
+        advanceTimeBy(300001)
         runCurrent()
-        
+
         assertEquals(VoiceState.PROCESSING, voiceManager.state.value)
     }
 

@@ -81,16 +81,29 @@ class VoiceStateMachineTest {
     }
 
     @Test
-    fun `RECORDING auto-transitions to PROCESSING after 60000ms`() = runTest {
+    fun `RECORDING auto-transitions to PROCESSING after 300000ms (5 minutes)`() = runTest {
         val stateMachine = VoiceStateMachine(this)
         stateMachine.startRecording()
         assertEquals(VoiceState.RECORDING, stateMachine.state.value)
 
-        advanceTimeBy(59999)
+        advanceTimeBy(299999)
         runCurrent()
         assertEquals(VoiceState.RECORDING, stateMachine.state.value)
         advanceTimeBy(1)
         runCurrent()
+        assertEquals(VoiceState.PROCESSING, stateMachine.state.value)
+    }
+
+    @Test
+    fun `onMaxDurationReached callback invoked before auto-transition`() = runTest {
+        val stateMachine = VoiceStateMachine(this)
+        var callbackInvoked = false
+        stateMachine.onMaxDurationReached = { callbackInvoked = true }
+        stateMachine.startRecording()
+
+        advanceTimeBy(300000)
+        runCurrent()
+        assertTrue(callbackInvoked)
         assertEquals(VoiceState.PROCESSING, stateMachine.state.value)
     }
 

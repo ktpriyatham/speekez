@@ -119,6 +119,7 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
                 val presets by presetDao().getAllPresets().collectAsStateWithLifecycle(initialValue = emptyList())
                 val voiceState by voiceManager.state.collectAsStateWithLifecycle()
                 val errorMessage by voiceManager.errorMessage.collectAsStateWithLifecycle()
+                val processingMessage by voiceManager.processingMessage.collectAsStateWithLifecycle()
 
                 var isExpanded by remember { mutableStateOf(false) }
 
@@ -132,6 +133,7 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
                             presets = presets,
                             voiceState = voiceState,
                             errorMessage = errorMessage,
+                            processingMessage = processingMessage,
                             onCollapse = { isExpanded = false },
                             onStartRecording = { presetId -> voiceManager.startRecording(presetId.toInt()) },
                             onStartRecordingWithDefaults = { voiceManager.startRecordingWithDefaults() },
@@ -283,6 +285,7 @@ fun ExpandedWidget(
     presets: List<Preset>,
     voiceState: VoiceState,
     errorMessage: String?,
+    processingMessage: String? = null,
     onCollapse: () -> Unit,
     onStartRecording: (Long) -> Unit,
     onStartRecordingWithDefaults: () -> Unit,
@@ -322,7 +325,7 @@ fun ExpandedWidget(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (voiceState != VoiceState.IDLE) {
-                StatusIndicator(voiceState, errorMessage)
+                StatusIndicator(voiceState, errorMessage, processingMessage)
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
@@ -377,7 +380,7 @@ fun ExpandedWidget(
 }
 
 @Composable
-fun StatusIndicator(state: VoiceState, errorMessage: String?) {
+fun StatusIndicator(state: VoiceState, errorMessage: String?, processingMessage: String? = null) {
     val color = when (state) {
         VoiceState.RECORDING -> Color.Red
         VoiceState.PROCESSING -> Color(0xFF6366F1)
@@ -392,7 +395,7 @@ fun StatusIndicator(state: VoiceState, errorMessage: String?) {
         Text(
             text = when (state) {
                 VoiceState.RECORDING -> "Recording..."
-                VoiceState.PROCESSING -> "Processing..."
+                VoiceState.PROCESSING -> processingMessage ?: "Transcribing..."
                 VoiceState.DONE -> "Done!"
                 VoiceState.ERROR -> errorMessage ?: "Error"
                 else -> ""
