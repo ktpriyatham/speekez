@@ -90,13 +90,6 @@ class VoiceManager(private val context: Context) {
         }
     }
 
-    init {
-        stateMachine.onMaxDurationReached = {
-            Log.i(TAG, "Max recording duration (5 min) reached")
-            _processingMessage.value = "Transcribing. Please start recording again."
-        }
-    }
-
     private val TAG = "VoiceManager"
 
     /**
@@ -117,6 +110,11 @@ class VoiceManager(private val context: Context) {
     val processingMessage: StateFlow<String?> = _processingMessage.asStateFlow()
 
     init {
+        stateMachine.onMaxDurationReached = {
+            Log.i(TAG, "Max recording duration (5 min) reached")
+            _processingMessage.value = "Transcribing. Please start recording again."
+        }
+
         scope.launch {
             stateMachine.state.collect { currentState ->
                 when (currentState) {
@@ -394,9 +392,10 @@ class VoiceManager(private val context: Context) {
      */
     fun onWindowHidden() {
         Log.i(TAG, "onWindowHidden()")
-        val currentState = stateMachine.state.value
-        if (currentState == VoiceState.RECORDING || currentState == VoiceState.PROCESSING) {
+        if (stateMachine.state.value == VoiceState.RECORDING) {
             cancelRecording()
         }
+        // Don't cancel during PROCESSING — the audio has already been captured
+        // and an in-flight API call should be allowed to complete
     }
 }

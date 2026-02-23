@@ -175,6 +175,9 @@ class FloatingWidgetService : LifecycleService(), ViewModelStoreOwner, SavedStat
 
     override fun onDestroy() {
         voiceManager.removeTranscriptionListener(transcriptionListener)
+        if (voiceManager.isRecording()) {
+            voiceManager.cancelRecording()
+        }
         composeView?.let {
             windowManager.removeView(it)
         }
