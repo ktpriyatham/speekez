@@ -48,8 +48,14 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
     private var autoDismissJob: Job? = null
 
     /**
+     * Callback invoked when the recording reaches the maximum duration (5 minutes).
+     * Set by VoiceManager to update processing message before auto-transition.
+     */
+    var onMaxDurationReached: (() -> Unit)? = null
+
+    /**
      * Transitions to RECORDING from any non-PROCESSING state.
-     * Sets a 60-second timer to auto-transition to PROCESSING.
+     * Sets a 5-minute timer to auto-transition to PROCESSING.
      */
     fun startRecording() {
         if (_state.value == VoiceState.PROCESSING) return
@@ -63,8 +69,9 @@ class VoiceStateMachine(private val scope: CoroutineScope) {
         _errorMessage.value = null
 
         autoTransitionJob = scope.launch {
-            delay(60000)
+            delay(300000) // 5 minutes
             if (_state.value == VoiceState.RECORDING) {
+                onMaxDurationReached?.invoke()
                 moveToProcessing()
             }
         }

@@ -35,8 +35,8 @@ class AudioHandler(private val context: Context) {
     private val TAG = "AudioHandler"
 
     /**
-     * Callback invoked when the recording reaches the 60-second limit.
-     * The 60s timer is owned by VoiceStateMachine to avoid duplicate timers.
+     * Callback invoked when the recording reaches the 5-minute limit.
+     * The 5-min timer is owned by VoiceStateMachine to avoid duplicate timers.
      */
     var onAutoStop: (() -> Unit)? = null
 

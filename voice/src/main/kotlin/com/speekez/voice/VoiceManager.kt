@@ -34,7 +34,9 @@ import com.speekez.data.transcriptionDao
 import com.speekez.security.EncryptedPreferencesManager
 import android.view.inputmethod.InputConnection
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -88,6 +90,13 @@ class VoiceManager(private val context: Context) {
         }
     }
 
+    init {
+        stateMachine.onMaxDurationReached = {
+            Log.i(TAG, "Max recording duration (5 min) reached")
+            _processingMessage.value = "Transcribing. Please start recording again."
+        }
+    }
+
     private val TAG = "VoiceManager"
 
     /**
@@ -99,6 +108,13 @@ class VoiceManager(private val context: Context) {
      * Observable error message when the state is [VoiceState.ERROR].
      */
     val errorMessage: StateFlow<String?> = stateMachine.errorMessage
+
+    private val _processingMessage = MutableStateFlow<String?>(null)
+    /**
+     * Observable processing message shown during PROCESSING state.
+     * Null means default "Transcribing...", non-null overrides the display text.
+     */
+    val processingMessage: StateFlow<String?> = _processingMessage.asStateFlow()
 
     init {
         scope.launch {
@@ -202,6 +218,7 @@ class VoiceManager(private val context: Context) {
     }
 
     private suspend fun beginRecording() {
+        _processingMessage.value = null
         if (!PermissionUtils.hasMicPermission(context)) {
             stateMachine.setError("Microphone permission denied")
             hapticManager.vibrateError()

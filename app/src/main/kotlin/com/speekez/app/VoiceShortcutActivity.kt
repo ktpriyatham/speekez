@@ -48,6 +48,7 @@ class VoiceShortcutActivity : ComponentActivity() {
             SpeekEZTheme {
                 val state by voiceManager.state.collectAsState()
                 val errorMessage by voiceManager.errorMessage.collectAsState()
+                val processingMessage by voiceManager.processingMessage.collectAsState()
 
                 var hasStarted by remember { mutableStateOf(false) }
                 LaunchedEffect(state) {
@@ -78,7 +79,7 @@ class VoiceShortcutActivity : ComponentActivity() {
                             Text(
                                 text = when (state) {
                                     VoiceState.RECORDING -> "Recording..."
-                                    VoiceState.PROCESSING -> "Transcribing..."
+                                    VoiceState.PROCESSING -> processingMessage ?: "Transcribing..."
                                     VoiceState.DONE -> "Done!"
                                     VoiceState.ERROR -> "Error"
                                     else -> "Starting..."

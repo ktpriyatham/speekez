@@ -203,7 +203,7 @@ fun ModelSettingsScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        CostEstimate(modelTier)
+        CostEstimate(apiMode, modelTier, apiRouter.hasGroqKey(), customSttModel, customRefinementModel)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -339,9 +339,9 @@ fun getSttModelOptions(apiMode: ApiMode, hasGroqKey: Boolean): List<ModelOption>
             ModelOption("whisper-large-v3", "Whisper v3", "\$0.11/hr \u00b7 ~8% WER \u00b7 Best accuracy")
         )
         apiMode == ApiMode.OPENROUTER -> listOf(
-            ModelOption("google/gemini-2.5-flash", "Gemini 2.5 Flash", "~\$0.15/M \u00b7 Fast"),
-            ModelOption("google/gemini-2.5-pro", "Gemini 2.5 Pro", "~\$1.25/M \u00b7 Great accuracy"),
-            ModelOption("openai/gpt-4o-audio-preview", "GPT-4o Audio", "~\$2.50/M \u00b7 Best accuracy")
+            ModelOption("google/gemini-2.5-flash", "Gemini 2.5 Flash", "~\$0.10/hr \u00b7 Fast"),
+            ModelOption("google/gemini-2.5-pro", "Gemini 2.5 Pro", "~\$0.40/hr \u00b7 Great accuracy"),
+            ModelOption("openai/gpt-4o-audio-preview", "GPT-4o Audio", "~\$2.00/hr \u00b7 Best accuracy")
         )
         apiMode == ApiMode.SEPARATE -> listOf(
             ModelOption("gpt-4o-mini-transcribe", "GPT-4o Mini Transcribe", "~\$0.36/hr \u00b7 ~4% WER"),
@@ -355,12 +355,12 @@ fun getRefinementModelOptions(apiMode: ApiMode): List<ModelOption> {
     // Latest models only, sorted by cost (cheapest first)
     return when (apiMode) {
         ApiMode.OPENROUTER -> listOf(
-            ModelOption("anthropic/claude-haiku-4-5", "Claude 4.5 Haiku", "\$1.00/M in \u00b7 Fast"),
-            ModelOption("anthropic/claude-sonnet-4-5", "Claude 4.5 Sonnet", "\$3.00/M in \u00b7 Best quality")
+            ModelOption("anthropic/claude-haiku-4-5", "Claude 4.5 Haiku", "~\$0.07/hr \u00b7 Fast"),
+            ModelOption("anthropic/claude-sonnet-4-5", "Claude 4.5 Sonnet", "~\$0.22/hr \u00b7 Best quality")
         )
         ApiMode.SEPARATE -> listOf(
-            ModelOption("claude-haiku-4-5-20251001", "Claude 4.5 Haiku", "\$1.00/M in \u00b7 Fast"),
-            ModelOption("claude-sonnet-4-5-20250929", "Claude 4.5 Sonnet", "\$3.00/M in \u00b7 Best quality")
+            ModelOption("claude-haiku-4-5-20251001", "Claude 4.5 Haiku", "~\$0.07/hr \u00b7 Fast"),
+            ModelOption("claude-sonnet-4-5-20250929", "Claude 4.5 Sonnet", "~\$0.22/hr \u00b7 Best quality")
         )
         ApiMode.NO_KEYS -> emptyList()
     }
@@ -480,27 +480,104 @@ fun ModelLabels(
     }
 }
 
-@Composable
-fun CostEstimate(tier: ModelTier) {
-    val cost = when (tier) {
-        ModelTier.CHEAP -> "$4.80"
-        ModelTier.BEST -> "$8.50"
-        ModelTier.CUSTOM -> "Variable"
+private fun getSttCostPerHour(apiMode: ApiMode, modelTier: ModelTier, hasGroq: Boolean, customSttModel: String): Double {
+    if (modelTier == ModelTier.CUSTOM) return getModelCostPerHour(customSttModel, true)
+    return when {
+        apiMode == ApiMode.OPENROUTER && hasGroq -> 0.04
+        apiMode == ApiMode.OPENROUTER && modelTier == ModelTier.CHEAP -> 0.10
+        apiMode == ApiMode.OPENROUTER && modelTier == ModelTier.BEST -> 2.00
+        apiMode == ApiMode.SEPARATE && modelTier == ModelTier.CHEAP -> 0.36
+        apiMode == ApiMode.SEPARATE && modelTier == ModelTier.BEST -> 0.36
+        else -> 0.10
     }
+}
+
+private fun getRefinementCostPerHour(apiMode: ApiMode, modelTier: ModelTier, customRefinementModel: String): Double {
+    if (modelTier == ModelTier.CUSTOM) return getModelCostPerHour(customRefinementModel, false)
+    return when (modelTier) {
+        ModelTier.CHEAP -> 0.07
+        ModelTier.BEST -> 0.22
+        else -> 0.07
+    }
+}
+
+private fun getModelCostPerHour(modelId: String, isStt: Boolean): Double {
+    return when (modelId) {
+        "distil-whisper-large-v3-en" -> 0.02
+        "whisper-large-v3-turbo" -> 0.04
+        "whisper-large-v3" -> 0.11
+        "gpt-4o-mini-transcribe" -> 0.36
+        "gpt-4o-transcribe" -> 0.36
+        "google/gemini-2.5-flash" -> 0.10
+        "google/gemini-2.5-pro" -> 0.40
+        "openai/gpt-4o-audio-preview" -> 2.00
+        "anthropic/claude-haiku-4-5", "claude-haiku-4-5-20251001" -> 0.07
+        "anthropic/claude-sonnet-4-5", "claude-sonnet-4-5-20250929" -> 0.22
+        else -> if (isStt) 0.10 else 0.07
+    }
+}
+
+private fun formatCost(amount: Double): String {
+    return when {
+        amount < 0.01 -> "%.1f\u00a2".format(amount * 100)
+        amount < 1.0 -> "$%.2f".format(amount)
+        else -> "$%.2f".format(amount)
+    }
+}
+
+@Composable
+fun CostEstimate(apiMode: ApiMode, modelTier: ModelTier, hasGroq: Boolean, customStt: String, customRefinement: String) {
+    val sttPerHour = getSttCostPerHour(apiMode, modelTier, hasGroq, customStt)
+    val refinePerHour = getRefinementCostPerHour(apiMode, modelTier, customRefinement)
+    val totalPerHour = sttPerHour + refinePerHour
+    val totalPerMinute = totalPerHour / 60.0
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Cost / Minute",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = formatCost(totalPerMinute),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Cost / Hour",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = formatCost(totalPerHour),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Est. ~$cost/mo (50 rec/day, 30s avg)",
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
+                text = "Transcription: ${formatCost(sttPerHour)}/hr + Refinement: ${formatCost(refinePerHour)}/hr",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                fontSize = 11.sp
             )
             Text(
-                text = "Based on current provider rates. Actual usage may vary.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                fontSize = 12.sp
+                text = "Refinement applies only to AI-enhanced presets.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                fontSize = 11.sp
             )
         }
     }

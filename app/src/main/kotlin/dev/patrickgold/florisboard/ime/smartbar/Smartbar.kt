@@ -220,6 +220,7 @@ private fun SpeekEZSmartbarMainRow(modifier: Modifier = Modifier) {
 
     val voiceState by voiceManager.state.collectAsState()
     val errorMessage by voiceManager.errorMessage.collectAsState()
+    val processingMessage by voiceManager.processingMessage.collectAsState()
 
     val apiRouterManager = remember { ApiRouterManager(context, EncryptedPreferencesManager(context)) }
     val isNoApiKey = apiRouterManager.getApiMode() == ApiMode.NO_KEYS
@@ -290,7 +291,7 @@ private fun SpeekEZSmartbarMainRow(modifier: Modifier = Modifier) {
                     )
                 } else if (voiceState == VoiceState.PROCESSING) {
                     Text(
-                        text = "Transcribing...",
+                        text = processingMessage ?: "Transcribing...",
                         color = SpeekEZPurple,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,

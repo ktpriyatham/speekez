@@ -42,6 +42,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.speekez.voice.VoiceState
 import com.speekez.voice.voiceManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -67,6 +68,7 @@ class SpeekEZWidgetRecordingActivity : ComponentActivity() {
             RecordingOverlay(
                 voiceStateFlow = voiceManager.state,
                 errorMessageFlow = voiceManager.errorMessage,
+                processingMessageFlow = voiceManager.processingMessage,
                 onStop = { voiceManager.stopRecording() },
                 onCancel = {
                     voiceManager.cancelRecording()
@@ -122,11 +124,13 @@ private val SpeekEZGreen = Color(0xFF4CAF50)
 fun RecordingOverlay(
     voiceStateFlow: StateFlow<VoiceState>,
     errorMessageFlow: StateFlow<String?>,
+    processingMessageFlow: StateFlow<String?> = MutableStateFlow(null),
     onStop: () -> Unit,
     onCancel: () -> Unit
 ) {
     val state by voiceStateFlow.collectAsState()
     val errorMessage by errorMessageFlow.collectAsState()
+    val processingMessage by processingMessageFlow.collectAsState()
 
     var timerSeconds by remember { mutableStateOf(0) }
     LaunchedEffect(state) {
@@ -178,7 +182,7 @@ fun RecordingOverlay(
                     Text(text = "Recording...", color = Color.White, fontSize = 16.sp)
                 }
                 VoiceState.PROCESSING -> {
-                    Text(text = "Transcribing...", color = SpeekEZPurple, fontSize = 20.sp, fontWeight = FontWeight.Medium)
+                    Text(text = processingMessage ?: "Transcribing...", color = SpeekEZPurple, fontSize = 20.sp, fontWeight = FontWeight.Medium)
                 }
                 VoiceState.DONE -> {
                     Text(text = "Done!", color = SpeekEZGreen, fontSize = 20.sp, fontWeight = FontWeight.Medium)
