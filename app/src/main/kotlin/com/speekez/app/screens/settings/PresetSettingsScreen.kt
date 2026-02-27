@@ -386,21 +386,37 @@ fun PresetEditForm(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // System Prompt
-            OutlinedTextField(
-                value = systemPrompt,
-                onValueChange = { systemPrompt = it },
-                label = { Text("System Prompt") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
+            // Style Instructions (only shown when refinement is enabled)
+            if (refinementLevel != RefinementLevel.NONE) {
+                Text(
+                    text = "Style Instructions (optional)",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    fontSize = 14.sp
                 )
-            )
+                Text(
+                    text = "Controls tone and audience. Your words are always preserved — this only changes how they're expressed.",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = systemPrompt,
+                    onValueChange = { systemPrompt = it },
+                    label = { Text("Style Instructions") },
+                    placeholder = { Text("e.g., Professional tone, Casual messaging style") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedPlaceholderColor = Color.Gray,
+                        focusedPlaceholderColor = Color.Gray
+                    )
+                )
+            }
 
             if (preset.id != 0L && canDelete) {
                 Spacer(modifier = Modifier.height(32.dp))

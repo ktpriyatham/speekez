@@ -25,7 +25,7 @@ class PresetSeederTest {
         PresetSeeder.seedDefaultPresetsIfEmpty(presetDao)
 
         // Then
-        coVerify(exactly = 3) { presetDao.insertPreset(any()) }
+        coVerify(exactly = 4) { presetDao.insertPreset(any()) }
     }
 
     @Test

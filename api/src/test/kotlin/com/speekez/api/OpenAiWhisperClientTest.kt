@@ -61,7 +61,7 @@ class OpenAiWhisperClientTest {
             client.transcribe(tempFile, "whisper-1", listOf("en"))
         }
 
-        assertEquals("Invalid OpenAI API Key", exception.message)
+        assertEquals("Invalid API Key for transcription", exception.message)
     }
 
     @Test
@@ -72,6 +72,6 @@ class OpenAiWhisperClientTest {
             client.transcribe(tempFile, "whisper-1", listOf("en"))
         }
 
-        assertEquals("OpenAI Rate Limit Exceeded", exception.message)
+        assertEquals("Rate Limit Exceeded", exception.message)
     }
 }

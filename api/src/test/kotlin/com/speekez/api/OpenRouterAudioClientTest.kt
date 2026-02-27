@@ -1,5 +1,9 @@
 package com.speekez.api
 
+import android.util.Base64
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -22,6 +26,9 @@ class OpenRouterAudioClientTest {
         server = MockWebServer()
         server.start()
 
+        mockkStatic(Base64::class)
+        every { Base64.encodeToString(any<ByteArray>(), any()) } returns "ZHVtbXlhdWRpbw=="
+
         val retrofit = Retrofit.Builder()
             .baseUrl(server.url("/"))
             .addConverterFactory(GsonConverterFactory.create())
@@ -38,6 +45,7 @@ class OpenRouterAudioClientTest {
     fun tearDown() {
         server.shutdown()
         tempFile.delete()
+        unmockkAll()
     }
 
     @Test

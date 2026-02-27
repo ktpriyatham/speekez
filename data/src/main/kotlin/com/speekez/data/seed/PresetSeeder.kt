@@ -35,7 +35,7 @@ object PresetSeeder {
                     defaultOutputLanguage = "en",
                     refinementLevel = RefinementLevel.FULL,
                     modelTier = ModelTier.CHEAP,
-                    systemPrompt = "Improve grammar and clarity while preserving the original meaning.",
+                    systemPrompt = "",
                     usageCount = 0,
                     createdAt = now,
                     updatedAt = now
@@ -63,7 +63,7 @@ object PresetSeeder {
                     defaultOutputLanguage = "en",
                     refinementLevel = RefinementLevel.FULL,
                     modelTier = ModelTier.BEST,
-                    systemPrompt = "Rewrite in a professional tone suitable for workplace communication.",
+                    systemPrompt = "Professional tone suitable for workplace emails, messages, and documents.",
                     usageCount = 0,
                     createdAt = now,
                     updatedAt = now

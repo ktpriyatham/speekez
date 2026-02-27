@@ -103,7 +103,7 @@ class AudioHandlerTest {
         assertFalse(file.exists())
         verify {
             anyConstructed<MediaRecorder>().stop()
-            anyConstructed<MediaRecorder>().reset()
+            anyConstructed<MediaRecorder>().release()
         }
     }
 
