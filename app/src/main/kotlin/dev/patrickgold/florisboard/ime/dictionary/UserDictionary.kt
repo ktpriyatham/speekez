@@ -228,7 +228,7 @@ abstract class FlorisUserDictionaryDatabase : RoomDatabase(), UserDictionaryData
     abstract override fun userDictionaryDao(): UserDictionaryDao
 
     override fun reset() {
-        TODO("Not yet implemented")
+        userDictionaryDao().deleteAll()
     }
 
     class Converters {
@@ -466,7 +466,8 @@ class SystemUserDictionaryDatabase(context: Context) : UserDictionaryDatabase {
     }
 
     override fun reset() {
-        TODO("Not yet implemented")
+        val resolver = applicationContext.get()?.contentResolver ?: return
+        resolver.delete(UserDictionary.Words.CONTENT_URI, null, null)
     }
 }
 

@@ -79,6 +79,7 @@ class ThemeManager(context: Context) {
     val previewThemeInfo = MutableStateFlow<ThemeInfo?>(null)
     val configurationChangeCounter = MutableStateFlow(0)
 
+    private val maxCachedThemes = 3
     private val cachedThemeInfos = mutableListOf<ThemeInfo>()
     private val activeThemeGuard = Mutex(locked = false)
     private val _activeThemeInfo = MutableStateFlow(ThemeInfo.DEFAULT)
@@ -96,7 +97,13 @@ class ThemeManager(context: Context) {
             } to version
         }
         indexedThemeConfigs.collectIn(scope) {
-            updateActiveTheme { cachedThemeInfos.clear() }
+            updateActiveTheme {
+                for (info in cachedThemeInfos) {
+                    info.loadedDir?.deleteContentsRecursively()
+                    info.loadedDir?.delete()
+                }
+                cachedThemeInfos.clear()
+            }
         }
         combine(
             prefs.theme.mode.asFlow(),
@@ -135,8 +142,6 @@ class ThemeManager(context: Context) {
         if (themeConfig == null) {
             return@withLock
         }
-        // TODO: loaded dir is implemented already...
-        // TODO: this leaks the loaded dir, but at least the state is not kaput from compose viewpoint
         val loadedDir = appContext.cacheDir.subDir("loaded").subDir(UUID.randomUUID().toString())
         runCatching {
             loadedDir.mkdirs()
@@ -148,6 +153,13 @@ class ThemeManager(context: Context) {
             SnyggStylesheet.fromJson(stylesheetJson).getOrThrow()
         }.fold(
             onSuccess = { newStylesheet ->
+                // Evict oldest cached themes when cache is full
+                while (cachedThemeInfos.size >= maxCachedThemes) {
+                    val evicted = cachedThemeInfos.removeAt(0)
+                    evicted.loadedDir?.deleteContentsRecursively()
+                    evicted.loadedDir?.delete()
+                    flogInfo { "Evicted cached theme ${evicted.name}, deleted ${evicted.loadedDir}" }
+                }
                 val newInfo = ThemeInfo(activeName, themeConfig, newStylesheet, loadedDir, null)
                 cachedThemeInfos.add(newInfo)
                 _activeThemeInfo.value = newInfo

@@ -110,6 +110,8 @@ class VoiceManager(private val context: Context) {
     val processingMessage: StateFlow<String?> = _processingMessage.asStateFlow()
 
     init {
+        audioHandler.cleanupOrphanedFiles()
+
         stateMachine.onMaxDurationReached = {
             Log.i(TAG, "Max recording duration (5 min) reached")
             _processingMessage.value = "Transcribing. Please start recording again."

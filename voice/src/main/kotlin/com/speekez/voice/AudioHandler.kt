@@ -124,6 +124,23 @@ class AudioHandler(private val context: Context) {
     }
 
     /**
+     * Deletes orphaned voice_temp_*.m4a files from cacheDir.
+     * These can accumulate if the app crashes during recording.
+     */
+    fun cleanupOrphanedFiles() {
+        val cacheDir = context.cacheDir
+        val orphanedFiles = cacheDir.listFiles { file ->
+            file.name.startsWith("voice_temp_") && file.name.endsWith(".m4a")
+        } ?: return
+        for (file in orphanedFiles) {
+            if (file != currentFile) {
+                file.delete()
+                Log.i(TAG, "Deleted orphaned audio file: ${file.name}")
+            }
+        }
+    }
+
+    /**
      * Releases MediaRecorder resources.
      */
     fun cleanup() {
