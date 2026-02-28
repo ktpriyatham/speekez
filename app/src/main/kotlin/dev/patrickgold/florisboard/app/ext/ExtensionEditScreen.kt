@@ -269,14 +269,11 @@ private fun EditScreen(
         manifestFile.writeJson(manifest, ExtensionJsonConfig)
         when (extEditor) {
             is ThemeExtensionEditor -> {
-                // TODO: this is hacky
-                val fonts = workspace.extDir.subDir("fonts")
-                if (fonts.exists()) {
-                    fonts.copyRecursively(workspace.saverDir.subDir("fonts"), overwrite = true)
-                }
-                val images = workspace.extDir.subDir("images")
-                if (images.exists()) {
-                    images.copyRecursively(workspace.saverDir.subDir("images"), overwrite = true)
+                for (assetDir in listOf("fonts", "images")) {
+                    val src = workspace.extDir.subDir(assetDir)
+                    if (src.exists()) {
+                        src.copyRecursively(workspace.saverDir.subDir(assetDir), overwrite = true)
+                    }
                 }
                 for (theme in extEditor.themes) {
                     val stylesheetFile = workspace.saverDir.subFile(theme.stylesheetPath())
@@ -286,9 +283,13 @@ private fun EditScreen(
                         runCatching {
                             val stylesheet = stylesheetEditor.build().toJson(PrettyPrintConfig).getOrThrow()
                             stylesheetFile.writeText(stylesheet)
-                        }.onFailure {
-                            // TODO: better error handling
-                            context.showLongToastSync(it.message.toString())
+                        }.onFailure { error ->
+                            val message = when (error) {
+                                is java.io.IOException -> "Failed to write theme file: ${error.localizedMessage}"
+                                else -> "Failed to build stylesheet for '${theme.label}': ${error.localizedMessage}"
+                            }
+                            android.util.Log.e("ExtensionEditScreen", "Stylesheet save failed for ${theme.id}", error)
+                            context.showLongToastSync(message)
                             return
                         }
                     } else {

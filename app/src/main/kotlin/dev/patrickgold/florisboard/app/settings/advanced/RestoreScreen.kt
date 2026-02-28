@@ -32,6 +32,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,8 @@ import java.text.DateFormat
 import java.util.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.florisboard.lib.android.readToFile
 import org.florisboard.lib.android.showLongToast
@@ -96,9 +99,10 @@ fun RestoreScreen() = FlorisScreen {
 
     val restoreFilesSelector = remember { Backup.FilesSelector() }
     var importStrategy by remember { mutableStateOf(ImportStrategy.Merge) }
-    // TODO: rememberCoroutineScope() is unusable because it provides the scope in a cancelled state, which does
-    //  not make sense at all. I suspect that this is a bug and once it is resolved we can use it here again.
-    val restoreScope = remember { CoroutineScope(Dispatchers.Main) }
+    val restoreScope = remember { CoroutineScope(Dispatchers.Main + SupervisorJob()) }
+    DisposableEffect(Unit) {
+        onDispose { restoreScope.cancel() }
+    }
     var restoreWorkspace by remember {
         mutableStateOf<CacheManager.BackupAndRestoreWorkspace?>(null)
     }
